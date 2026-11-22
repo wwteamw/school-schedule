@@ -2,9 +2,14 @@
 <html lang="ru" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#090d16">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" id="metaThemeColor" content="#090d16">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ШРК Уроки">
   <title>Расписание — Школа русской культуры</title>
+  <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/svg+xml" href="./icon.svg?v=1">
   <link rel="shortcut icon" href="./icon.svg?v=1">
   <link rel="apple-touch-icon" id="appleTouchIcon" href="./icon.svg?v=1">
@@ -74,7 +79,7 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
-      padding: 12px 14px 40px;
+      padding: calc(12px + env(safe-area-inset-top, 0px)) 14px calc(40px + env(safe-area-inset-bottom, 0px));
       line-height: 1.4;
     }
     .wrap { max-width: 700px; margin: 0 auto; }
@@ -149,6 +154,35 @@
     }
     .icon-btn:active { transform: scale(0.97); }
     .icon-btn:hover { border-color: var(--accent); }
+    .icon-btn.install-accent {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Компактная плашка подсказки установки для iOS */
+    .ios-install-sheet {
+      background: var(--card);
+      border: 1px solid var(--accent);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      display: none;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13px;
+      box-shadow: var(--shadow);
+    }
+    .ios-install-sheet.open { display: flex; }
+    .ios-install-close {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 2px 4px;
+    }
 
     /* Навигация по режимам */
     .nav-tabs {
@@ -515,7 +549,7 @@
 
     .toast {
       position: fixed;
-      bottom: 20px;
+      bottom: calc(20px + env(safe-area-inset-bottom, 0px));
       left: 50%;
       transform: translateX(-50%) translateY(20px);
       background: #10b981;
@@ -536,6 +570,7 @@
       h1 { font-size: 19px; }
       .subgroups-grid { grid-template-columns: 1fr; }
       .break-divider { margin-left: 12px; }
+      .icon-btn { padding: 0 9px; }
     }
   </style>
 </head>
@@ -555,11 +590,20 @@
           </div>
         </div>
         <div class="icon-actions">
+          <button class="icon-btn install-accent" id="installBtn" type="button" style="display:none" title="Установить на главный экран">📲</button>
           <button class="icon-btn" id="themeBtn" type="button" title="Сменить тему">🌙</button>
           <a class="icon-btn" href="./latest.pdf" target="_blank" title="Открыть оригинал PDF">📄 PDF</a>
         </div>
       </div>
     </header>
+
+    <!-- Подсказка установки для iPhone / Safari -->
+    <div class="ios-install-sheet" id="iosInstallSheet">
+      <div>
+        <b>📲 Установка на iPhone:</b> нажми кнопку <b>«Поделиться»</b> (⬆️) внизу браузера и выбери <b>«На экран „Домой“»</b> — появится иконка <b>ШРК</b> с работой без интернета.
+      </div>
+      <button class="ios-install-close" id="iosInstallClose" type="button" aria-label="Закрыть">✕</button>
+    </div>
 
     <!-- Переключатель разделов -->
     <nav class="nav-tabs">
@@ -638,6 +682,8 @@
       13: { start: '18:30', end: '19:10' }
     };
 
+    const isTgWebApp = Boolean(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
+
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
@@ -651,7 +697,7 @@
       document.documentElement.setAttribute('data-theme', savedTheme);
     }
 
-    // Генерация PNG для Safari / iOS закладок из векторной иконки
+    // Генерация PNG 180×180 для iPhone / Safari «На экран Домой»
     (function setupAppleTouchIcon() {
       const link = document.getElementById('appleTouchIcon');
       if (!link) return;
@@ -669,11 +715,22 @@
       img.src = './icon.svg?v=1';
     })();
 
+    // Регистрация Service Worker для работы без интернета
+    if ('serviceWorker' in navigator && !isTgWebApp) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+
     const els = {
       school: document.getElementById('schoolName'),
       title: document.getElementById('title'),
       meta: document.getElementById('meta'),
+      metaThemeColor: document.getElementById('metaThemeColor'),
       creatorLink: document.getElementById('creatorLink'),
+      installBtn: document.getElementById('installBtn'),
+      iosInstallSheet: document.getElementById('iosInstallSheet'),
+      iosInstallClose: document.getElementById('iosInstallClose'),
       themeBtn: document.getElementById('themeBtn'),
       tabClass: document.getElementById('tabClass'),
       tabTeacher: document.getElementById('tabTeacher'),
@@ -703,14 +760,47 @@
     let currentGrade = localStorage.getItem('saved_grade') || '5';
     let currentClass = localStorage.getItem('selected_class') || '5 А';
     let currentTeacher = localStorage.getItem('selected_teacher') || '';
+    let deferredInstallPrompt = null;
+
+    // Логика кнопки установки приложения (Android / Desktop + подсказка для iOS)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+    if (!isStandalone && !isTgWebApp) {
+      if (isIos) {
+        els.installBtn.style.display = 'inline-flex';
+      }
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        els.installBtn.style.display = 'inline-flex';
+      });
+      window.addEventListener('appinstalled', () => {
+        deferredInstallPrompt = null;
+        els.installBtn.style.display = 'none';
+        showToast('Приложение ШРК установлено!');
+      });
+    }
+
+    els.installBtn.addEventListener('click', async () => {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        const choice = await deferredInstallPrompt.userChoice;
+        if (choice && choice.outcome === 'accepted') {
+          els.installBtn.style.display = 'none';
+        }
+        deferredInstallPrompt = null;
+      } else if (isIos) {
+        els.iosInstallSheet.classList.toggle('open');
+      }
+    });
+
+    els.iosInstallClose.addEventListener('click', () => {
+      els.iosInstallSheet.classList.remove('open');
+    });
 
     els.creatorLink.addEventListener('click', (e) => {
-      if (
-        window.Telegram &&
-        window.Telegram.WebApp &&
-        window.Telegram.WebApp.initData &&
-        typeof window.Telegram.WebApp.openTelegramLink === 'function'
-      ) {
+      if (isTgWebApp && typeof window.Telegram.WebApp.openTelegramLink === 'function') {
         e.preventDefault();
         window.Telegram.WebApp.openTelegramLink('https://t.me/cryforsex');
       }
@@ -719,6 +809,9 @@
     function syncThemeIcon() {
       const isLight = document.documentElement.getAttribute('data-theme') === 'light';
       els.themeBtn.textContent = isLight ? '☀️' : '🌙';
+      if (els.metaThemeColor) {
+        els.metaThemeColor.setAttribute('content', isLight ? '#f1f5f9' : '#090d16');
+      }
     }
     syncThemeIcon();
 
@@ -1271,7 +1364,8 @@
           const wd = json.meta.weekday ? ` (${json.meta.weekday})` : '';
           els.title.textContent = `На ${json.meta.date}${wd}`;
         }
-        els.meta.textContent = `Обновлено из MAX: ${json.updated_at || '—'}`;
+        const netTag = navigator.onLine === false ? ' (офлайн-кеш)' : '';
+        els.meta.textContent = `Обновлено из MAX: ${json.updated_at || '—'}${netTag}`;
         renderCurrentView();
       })
       .catch(err => {
