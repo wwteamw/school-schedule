@@ -1,135 +1,594 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Расписание уроков — Школа русской культуры</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Расписание — Школа русской культуры</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    :root {
+    :root, [data-theme="dark"] {
       color-scheme: dark;
-      --bg: #0b0e14;
-      --card: #151923;
-      --card-sub: #0f131b;
-      --border: #252b3b;
-      --text: #f1f5f9;
+      --bg: #090d16;
+      --bg-elev: #111726;
+      --card: #151d2e;
+      --card-sub: #0e1422;
+      --border: #232f46;
+      --text: #f8fafc;
       --muted: #94a3b8;
       --accent: #3b82f6;
-      --accent-soft: rgba(59, 130, 246, 0.16);
+      --accent-hover: #2563eb;
+      --accent-soft: rgba(59, 130, 246, 0.15);
+      --now-border: #10b981;
+      --now-soft: rgba(16, 185, 129, 0.14);
+      --now-text: #34d399;
       --dist-bg: rgba(245, 158, 11, 0.18);
-      --dist-text: #fcd34d;
+      --dist-text: #fbbf24;
+      --corp-a-bg: rgba(59, 130, 246, 0.16);
+      --corp-a-tx: #93c5fd;
+      --corp-b-bg: rgba(168, 85, 247, 0.16);
+      --corp-b-tx: #d8b4fe;
+      --corp-v-bg: rgba(20, 184, 166, 0.16);
+      --corp-v-tx: #5eead4;
+      --shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
     }
+
+    [data-theme="light"] {
+      color-scheme: light;
+      --bg: #f1f5f9;
+      --bg-elev: #ffffff;
+      --card: #ffffff;
+      --card-sub: #f8fafc;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-soft: rgba(37, 99, 235, 0.1);
+      --now-border: #059669;
+      --now-soft: rgba(5, 150, 105, 0.1);
+      --now-text: #059669;
+      --dist-bg: rgba(245, 158, 11, 0.16);
+      --dist-text: #b45309;
+      --corp-a-bg: rgba(37, 99, 235, 0.1);
+      --corp-a-tx: #1d4ed8;
+      --corp-b-bg: rgba(147, 51, 234, 0.1);
+      --corp-b-tx: #7e22ce;
+      --corp-v-bg: rgba(13, 148, 136, 0.1);
+      --corp-v-tx: #0f766e;
+      --shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+    }
+
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 16px; }
-    .wrap { max-width: 720px; margin: 0 auto; }
-    .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-    .school { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #60a5fa; margin-bottom: 4px; }
-    h1 { font-size: 22px; margin: 0 0 4px; line-height: 1.2; }
-    .meta { color: var(--muted); font-size: 13px; }
-    .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .tabs { display: flex; background: var(--card); border-radius: 10px; padding: 3px; border: 1px solid var(--border); }
-    .tab { background: transparent; color: var(--muted); border: none; padding: 8px 13px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
-    .tab.active { background: var(--accent); color: #fff; }
-    a.btn-pdf { background: var(--card); border: 1px solid var(--border); color: var(--text); text-decoration: none; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 600; white-space: nowrap; }
-    a.btn-pdf:hover { border-color: var(--accent); }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 12px 14px 40px;
+      line-height: 1.4;
+    }
+    .wrap { max-width: 700px; margin: 0 auto; }
 
-    .panel { margin-bottom: 16px; }
-    .grade-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-    .chip { background: var(--card); color: var(--text); border: 1px solid var(--border); padding: 7px 12px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.15s; }
-    .chip:hover { border-color: #3b445e; }
-    .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-    .class-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-    .class-chip { background: var(--card-sub); color: var(--muted); border: 1px solid var(--border); padding: 7px 11px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
-    .class-chip.active { background: #f8fafc; color: #0f172a; border-color: #fff; font-weight: 700; }
+    /* Шапка */
+    .header-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow);
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .school-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      margin-bottom: 3px;
+    }
+    h1 { font-size: 21px; margin: 0; font-weight: 800; letter-spacing: -0.01em; }
+    .meta { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+    .icon-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .icon-btn {
+      background: var(--card-sub);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      height: 36px;
+      padding: 0 11px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      text-decoration: none;
+      transition: border-color 0.15s, transform 0.1s;
+    }
+    .icon-btn:active { transform: scale(0.97); }
+    .icon-btn:hover { border-color: var(--accent); }
 
-    .search-box { position: relative; margin-bottom: 10px; }
-    input, select { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 15px; outline: none; }
-    input:focus, select:focus { border-color: var(--accent); }
-    select option { background: #151923; color: #f1f5f9; }
-    .teacher-chips { display: flex; gap: 6px; flex-wrap: wrap; max-height: 156px; overflow-y: auto; padding: 2px 0; }
-    .teacher-chip { background: var(--card); color: #cbd5e1; border: 1px solid var(--border); padding: 6px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; }
-    .teacher-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+    /* Навигация по режимам */
+    .nav-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 4px;
+      margin-bottom: 12px;
+      gap: 4px;
+    }
+    .nav-tab {
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      padding: 9px 8px;
+      border-radius: 9px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .nav-tab.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.35);
+    }
 
-    .section-head { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 10px; }
-    .section-title { font-size: 17px; font-weight: 700; }
-    .count-pill { font-size: 12px; color: var(--muted); background: var(--card); border: 1px solid var(--border); padding: 4px 10px; border-radius: 999px; }
+    /* Панель выбора параллели и класса */
+    .selector-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .grade-scroll {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      scrollbar-width: none;
+    }
+    .grade-scroll::-webkit-scrollbar { display: none; }
+    .grade-btn {
+      background: var(--card-sub);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 7px 13px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .grade-btn.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .class-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+      gap: 6px;
+    }
+    .class-btn {
+      background: var(--card-sub);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 4px;
+      border-radius: 9px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: 0.12s;
+    }
+    .class-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      font-weight: 800;
+    }
 
-    .lesson { background: var(--card); border: 1px solid var(--border); padding: 12px 14px; border-radius: 12px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start; }
-    .num { font-weight: 700; color: #60a5fa; min-width: 32px; height: 32px; background: var(--accent-soft); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; }
-    .body { flex: 1; min-width: 0; }
-    .row-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-    .subj { font-weight: 600; font-size: 15px; line-height: 1.35; }
-    .teacher { color: var(--muted); font-size: 13px; margin-top: 3px; }
-    .badge { font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: var(--accent-soft); color: #93c5fd; white-space: nowrap; flex-shrink: 0; }
-    .badge.dist { background: var(--dist-bg); color: var(--dist-text); }
-    .subgroups { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 8px; width: 100%; }
-    .sg-card { background: var(--card-sub); border: 1px solid var(--border); border-radius: 9px; padding: 9px 10px; }
-    .sg-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); margin-bottom: 4px; gap: 6px; }
-    .empty { color: var(--muted); text-align: center; padding: 28px 16px; background: var(--card); border-radius: 12px; border: 1px solid var(--border); font-size: 14px; }
+    /* Поиск учителя */
+    .search-wrap { position: relative; margin-bottom: 10px; }
+    .search-input {
+      width: 100%;
+      padding: 11px 36px 11px 13px;
+      border-radius: 11px;
+      border: 1px solid var(--border);
+      background: var(--card-sub);
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .clear-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 6px;
+      display: none;
+    }
+    .teacher-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      max-height: 148px;
+      overflow-y: auto;
+    }
+    .teacher-chip {
+      background: var(--card-sub);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      cursor: pointer;
+    }
+    .teacher-chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    /* Сводка дня / Живой таймер */
+    .status-banner {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .status-banner.live {
+      background: var(--now-soft);
+      border-color: var(--now-border);
+    }
+    .status-left { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--now-border);
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.22);
+      flex-shrink: 0;
+    }
+    .status-right { color: var(--muted); font-size: 12px; white-space: nowrap; font-weight: 600; }
+
+    /* Заголовок секции с кнопкой Поделиться */
+    .section-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 2px 10px;
+    }
+    .section-title { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .shift-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .share-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .share-btn:hover { color: var(--text); border-color: var(--accent); }
+
+    /* Карточка урока */
+    .lesson-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 13px;
+      margin-bottom: 8px;
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .lesson-card.is-now {
+      border-color: var(--now-border);
+      box-shadow: 0 0 0 1px var(--now-border);
+    }
+    .time-col {
+      min-width: 58px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-right: 10px;
+      border-right: 1px solid var(--border);
+      flex-shrink: 0;
+      text-align: center;
+    }
+    .lesson-num {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1.1;
+    }
+    .lesson-card.is-now .lesson-num { color: var(--now-text); }
+    .time-start { font-size: 12px; font-weight: 700; color: var(--text); margin-top: 3px; }
+    .time-end { font-size: 11px; color: var(--muted); }
+
+    .lesson-content { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+    .lesson-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .subj-name { font-weight: 700; font-size: 15px; line-height: 1.3; word-break: break-word; }
+    .teacher-name { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+    .now-tag {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--now-text);
+      background: var(--now-soft);
+      padding: 2px 6px;
+      border-radius: 5px;
+      margin-bottom: 4px;
+      align-self: flex-start;
+    }
+
+    /* Бейджи кабинетов по корпусам */
+    .room-badge {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 7px;
+      background: var(--corp-a-bg);
+      color: var(--corp-a-tx);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .room-badge.corp-b { background: var(--corp-b-bg); color: var(--corp-b-tx); }
+    .room-badge.corp-v { background: var(--corp-v-bg); color: var(--corp-v-tx); }
+    .room-badge.dist { background: var(--dist-bg); color: var(--dist-text); }
+
+    /* Подгруппы */
+    .subgroups-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 8px;
+      width: 100%;
+    }
+    .sg-box {
+      background: var(--card-sub);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 10px;
+    }
+    .sg-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    /* Строка большой перемены или окна */
+    .break-divider {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 11.5px;
+      margin: -2px 8px 6px 72px;
+    }
+    .break-divider::before, .break-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Таблица всех звонков */
+    .bells-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      overflow: hidden;
+    }
+    .bells-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 11px 15px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .bells-row:last-child { border-bottom: none; }
+    .bells-row.is-now { background: var(--now-soft); }
+    .bells-num { font-weight: 800; color: var(--accent); min-width: 72px; }
+    .bells-time { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .bells-break { font-size: 12px; color: var(--muted); min-width: 95px; text-align: right; }
+
+    .empty-state {
+      color: var(--muted);
+      text-align: center;
+      padding: 32px 16px;
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #10b981;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 9px 16px;
+      border-radius: 999px;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.22s;
+      z-index: 50;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 19px; }
+      .subgroups-grid { grid-template-columns: 1fr; }
+      .break-divider { margin-left: 12px; }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="top">
-      <div>
-        <div class="school" id="schoolName">МАОУ «Школа русской культуры»</div>
-        <h1 id="title">Расписание уроков</h1>
-        <div class="meta" id="meta">Загрузка расписания...</div>
-      </div>
-      <div class="top-actions">
-        <div class="tabs">
-          <button class="tab active" id="tabClass" type="button">По классам</button>
-          <button class="tab" id="tabTeacher" type="button">По учителям</button>
+    <header class="header-card">
+      <div class="header-top">
+        <div>
+          <div class="school-tag" id="schoolName">МАОУ «Школа русской культуры»</div>
+          <h1 id="title">Расписание уроков</h1>
+          <div class="meta" id="meta">Загрузка актуального расписания...</div>
         </div>
-        <a class="btn-pdf" href="./latest.pdf" target="_blank">📄 PDF</a>
+        <div class="icon-actions">
+          <button class="icon-btn" id="themeBtn" type="button" title="Сменить тему">🌙</button>
+          <a class="icon-btn" href="./latest.pdf" target="_blank" title="Открыть оригинал PDF">📄 PDF</a>
+        </div>
       </div>
-    </div>
+    </header>
 
-    <!-- Панель выбора класса -->
-    <div class="panel" id="classPanel">
-      <div class="grade-row" id="gradeRow"></div>
-      <div class="class-row" id="classRow"></div>
-      <select id="classSelect" aria-label="Выбор класса"></select>
-    </div>
+    <!-- Переключатель разделов -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" id="tabClass" type="button">🎒 Классы</button>
+      <button class="nav-tab" id="tabTeacher" type="button">👩‍🏫 Учителя</button>
+      <button class="nav-tab" id="tabBells" type="button">🔔 Звонки</button>
+    </nav>
 
-    <!-- Панель поиска учителя -->
-    <div class="panel" id="teacherPanel" style="display:none">
-      <div class="search-box">
-        <input id="teacherInput" type="search" autocomplete="off" placeholder="Начните вводить фамилию или выберите ниже (например: Бурый, Сенькина)..." />
+    <!-- Выбор класса -->
+    <section class="selector-card" id="classPanel">
+      <div class="grade-scroll" id="gradeRow"></div>
+      <div class="class-grid" id="classGrid"></div>
+    </section>
+
+    <!-- Поиск учителя -->
+    <section class="selector-card" id="teacherPanel" style="display:none">
+      <div class="search-wrap">
+        <input class="search-input" id="teacherInput" type="search" autocomplete="off" placeholder="Фамилия учителя (например: Бурый, Сенькина)..." />
+        <button class="clear-btn" id="clearTeacherBtn" type="button">✕</button>
       </div>
       <div class="teacher-chips" id="teacherChips"></div>
+    </section>
+
+    <!-- Живой баннер времени / сводка смены -->
+    <div class="status-banner" id="statusBanner" style="display:none">
+      <div class="status-left" id="statusLeft"></div>
+      <div class="status-right" id="statusRight"></div>
     </div>
 
-    <div class="section-head">
-      <div class="section-title" id="sectionTitle">—</div>
-      <div class="count-pill" id="countPill">0 ур.</div>
+    <!-- Заголовок текущего расписания -->
+    <div class="section-bar" id="sectionBar">
+      <div class="section-title">
+        <span id="sectionTitle">—</span>
+        <span class="shift-pill" id="shiftPill"></span>
+      </div>
+      <button class="share-btn" id="shareBtn" type="button">📤 Поделиться</button>
     </div>
 
-    <div id="list"></div>
+    <main id="contentList"></main>
   </div>
 
+  <div class="toast" id="toast">Скопировано в буфер обмена</div>
+
   <script>
+    // Сетка звонков по сквозным номерам уроков (40 минут, начало в 08:00 МСК)
+    const BELLS = {
+      1:  { start: '08:00', end: '08:40' },
+      2:  { start: '08:50', end: '09:30' },
+      3:  { start: '09:50', end: '10:30' },
+      4:  { start: '10:50', end: '11:30' },
+      5:  { start: '11:50', end: '12:30' },
+      6:  { start: '12:40', end: '13:20' },
+      7:  { start: '13:30', end: '14:10' },
+      8:  { start: '14:20', end: '15:00' },
+      9:  { start: '15:20', end: '16:00' },
+      10: { start: '16:15', end: '16:55' },
+      11: { start: '17:05', end: '17:45' },
+      12: { start: '17:55', end: '18:35' },
+      13: { start: '18:40', end: '19:20' }
+    };
+
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.ready();
       window.Telegram.WebApp.expand();
+      if (window.Telegram.WebApp.colorScheme === 'light' && !localStorage.getItem('ui_theme')) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    }
+
+    const savedTheme = localStorage.getItem('ui_theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
     }
 
     const els = {
       school: document.getElementById('schoolName'),
       title: document.getElementById('title'),
       meta: document.getElementById('meta'),
+      themeBtn: document.getElementById('themeBtn'),
       tabClass: document.getElementById('tabClass'),
       tabTeacher: document.getElementById('tabTeacher'),
+      tabBells: document.getElementById('tabBells'),
       classPanel: document.getElementById('classPanel'),
       teacherPanel: document.getElementById('teacherPanel'),
       gradeRow: document.getElementById('gradeRow'),
-      classRow: document.getElementById('classRow'),
-      classSelect: document.getElementById('classSelect'),
+      classGrid: document.getElementById('classGrid'),
       teacherInput: document.getElementById('teacherInput'),
+      clearTeacherBtn: document.getElementById('clearTeacherBtn'),
       teacherChips: document.getElementById('teacherChips'),
+      statusBanner: document.getElementById('statusBanner'),
+      statusLeft: document.getElementById('statusLeft'),
+      statusRight: document.getElementById('statusRight'),
+      sectionBar: document.getElementById('sectionBar'),
       sectionTitle: document.getElementById('sectionTitle'),
-      countPill: document.getElementById('countPill'),
-      list: document.getElementById('list'),
+      shiftPill: document.getElementById('shiftPill'),
+      shareBtn: document.getElementById('shareBtn'),
+      list: document.getElementById('contentList'),
+      toast: document.getElementById('toast')
     };
 
     let DATA = null;
@@ -138,6 +597,62 @@
     let currentGrade = localStorage.getItem('saved_grade') || '5';
     let currentClass = localStorage.getItem('selected_class') || '5 А';
     let currentTeacher = localStorage.getItem('selected_teacher') || '';
+
+    function syncThemeIcon() {
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      els.themeBtn.textContent = isLight ? '☀️' : '🌙';
+    }
+    syncThemeIcon();
+
+    els.themeBtn.addEventListener('click', () => {
+      const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('ui_theme', next);
+      syncThemeIcon();
+    });
+
+    function toMin(hhmm) {
+      if (!hhmm) return -1;
+      const [h, m] = hhmm.split(':').map(Number);
+      return h * 60 + m;
+    }
+
+    function getBreakMinutes(numA, numB) {
+      if (numB !== numA + 1 || !BELLS[numA] || !BELLS[numB]) return 0;
+      return Math.max(0, toMin(BELLS[numB].start) - toMin(BELLS[numA].end));
+    }
+
+    function getMskNow() {
+      const now = new Date();
+      const parts = new Intl.DateTimeFormat('ru-RU', {
+        timeZone: 'Europe/Moscow',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      }).formatToParts(now);
+      const map = {};
+      parts.forEach(p => { map[p.type] = p.value; });
+      return {
+        dateStr: `${map.day}.${map.month}.${map.year}`,
+        minutes: Number(map.hour) * 60 + Number(map.minute),
+        timeStr: `${map.hour}:${map.minute}`
+      };
+    }
+
+    function isScheduleToday() {
+      if (!DATA || !DATA.meta || !DATA.meta.date) return false;
+      return DATA.meta.date.trim() === getMskNow().dateStr;
+    }
+
+    function getActiveLessonNum() {
+      if (!isScheduleToday()) return null;
+      const cur = getMskNow().minutes;
+      for (const [numStr, b] of Object.entries(BELLS)) {
+        if (cur >= toMin(b.start) && cur < toMin(b.end)) {
+          return Number(numStr);
+        }
+      }
+      return null;
+    }
 
     function normStr(s) {
       return (s || '').toLowerCase().replace(/ё/g, 'е').trim();
@@ -153,8 +668,15 @@
 
     function badgeHtml(room) {
       if (!room) return '';
-      const isDist = room.toUpperCase() === 'ДИСТ';
-      return `<span class="badge ${isDist ? 'dist' : ''}">${isDist ? '💻 ДИСТ' : 'каб. ' + escapeHtml(room)}</span>`;
+      const r = room.trim();
+      const up = r.toUpperCase();
+      if (up === 'ДИСТ') {
+        return `<span class="room-badge dist">💻 ДИСТ</span>`;
+      }
+      let extra = '';
+      if (up.startsWith('Б.') || up.startsWith('B.')) extra = 'corp-b';
+      else if (up.startsWith('В.')) extra = 'corp-v';
+      return `<span class="room-badge ${extra}">каб. ${escapeHtml(r)}</span>`;
     }
 
     function getGrade(clsName) {
@@ -178,32 +700,117 @@
       return Array.from(set).sort((a, b) => a.localeCompare(b, 'ru'));
     }
 
+    function timeColHtml(num, isNow) {
+      const b = BELLS[num];
+      return `
+        <div class="time-col">
+          <div class="lesson-num">${escapeHtml(num)} ур.</div>
+          ${b ? `<div class="time-start">${b.start}</div><div class="time-end">${b.end}</div>` : ''}
+        </div>
+      `;
+    }
+
+    function renderStatusForLessons(lessons) {
+      if (!lessons || !lessons.length) {
+        els.statusBanner.style.display = 'none';
+        return;
+      }
+      const nums = lessons.map(l => Number(l.lesson || l.num || 0)).filter(n => n > 0);
+      if (!nums.length) {
+        els.statusBanner.style.display = 'none';
+        return;
+      }
+      const firstNum = Math.min(...nums);
+      const lastNum = Math.max(...nums);
+      const startSpan = BELLS[firstNum] ? BELLS[firstNum].start : '';
+      const endSpan = BELLS[lastNum] ? BELLS[lastNum].end : '';
+      const timeRangeText = (startSpan && endSpan) ? `${startSpan}–${endSpan}` : `${firstNum}–${lastNum} ур.`;
+
+      els.statusBanner.style.display = 'flex';
+      if (!isScheduleToday()) {
+        els.statusBanner.classList.remove('live');
+        const dateTitle = (DATA.meta && DATA.meta.date) ? DATA.meta.date : '';
+        const wd = (DATA.meta && DATA.meta.weekday) ? `${DATA.meta.weekday}, ` : '';
+        els.statusLeft.innerHTML = `<span>🗓️ На ${escapeHtml(wd + dateTitle)}</span>`;
+        els.statusRight.textContent = `🕗 ${timeRangeText} (${lessons.length} ур.)`;
+        return;
+      }
+
+      const cur = getMskNow().minutes;
+      const firstStart = BELLS[firstNum] ? toMin(BELLS[firstNum].start) : -1;
+      const lastEnd = BELLS[lastNum] ? toMin(BELLS[lastNum].end) : -1;
+
+      if (firstStart > 0 && cur < firstStart) {
+        const diff = firstStart - cur;
+        els.statusBanner.classList.toggle('live', diff <= 60);
+        els.statusLeft.innerHTML = diff <= 60
+          ? `<span class="pulse-dot"></span><span>До начала ${firstNum}-го урока: ${diff} мин</span>`
+          : `<span>Начало занятий в ${BELLS[firstNum].start}</span>`;
+        els.statusRight.textContent = `${timeRangeText}`;
+        return;
+      }
+
+      if (lastEnd > 0 && cur >= lastEnd) {
+        els.statusBanner.classList.remove('live');
+        els.statusLeft.innerHTML = `<span>✅ Уроки на сегодня завершены</span>`;
+        els.statusRight.textContent = `${timeRangeText}`;
+        return;
+      }
+
+      for (let i = 0; i < nums.length; i++) {
+        const n = nums[i];
+        const b = BELLS[n];
+        if (!b) continue;
+        const s = toMin(b.start), e = toMin(b.end);
+        if (cur >= s && cur < e) {
+          els.statusBanner.classList.add('live');
+          els.statusLeft.innerHTML = `<span class="pulse-dot"></span><span>Идёт ${n}-й урок • до звонка ${e - cur} мин</span>`;
+          els.statusRight.textContent = `до ${b.end}`;
+          return;
+        }
+        if (i + 1 < nums.length) {
+          const nextN = nums[i + 1];
+          const nextB = BELLS[nextN];
+          if (nextB && cur >= e && cur < toMin(nextB.start)) {
+            els.statusBanner.classList.add('live');
+            els.statusLeft.innerHTML = `<span class="pulse-dot"></span><span>Перемена • до ${nextN}-го урока ${toMin(nextB.start) - cur} мин</span>`;
+            els.statusRight.textContent = `в ${nextB.start}`;
+            return;
+          }
+        }
+      }
+
+      els.statusBanner.classList.remove('live');
+      els.statusLeft.innerHTML = `<span>Расписание на сегодня</span>`;
+      els.statusRight.textContent = `${timeRangeText}`;
+    }
+
     function setMode(nextMode) {
       mode = nextMode;
       els.classPanel.style.display = mode === 'class' ? 'block' : 'none';
       els.teacherPanel.style.display = mode === 'teacher' ? 'block' : 'none';
+      els.sectionBar.style.display = mode === 'bells' ? 'none' : 'flex';
       els.tabClass.classList.toggle('active', mode === 'class');
       els.tabTeacher.classList.toggle('active', mode === 'teacher');
-      if (mode === 'class') {
-        renderClassUI();
-      } else {
-        renderTeacherUI();
-      }
+      els.tabBells.classList.toggle('active', mode === 'bells');
+      renderCurrentView();
+    }
+
+    function renderCurrentView() {
+      if (mode === 'class') renderClassUI();
+      else if (mode === 'teacher') renderTeacherUI();
+      else renderBellsUI();
     }
 
     function renderClassUI() {
       if (!DATA || !DATA.classes) return;
       const allClasses = Object.keys(DATA.classes);
       if (!allClasses.length) {
-        els.sectionTitle.textContent = 'Нет данных';
-        els.countPill.textContent = '0 ур.';
-        els.list.innerHTML = '<div class="empty">Расписание пока пустое</div>';
+        els.list.innerHTML = '<div class="empty-state">Расписание пока пустое</div>';
         return;
       }
 
-      if (!DATA.classes[currentClass]) {
-        currentClass = allClasses[0];
-      }
+      if (!DATA.classes[currentClass]) currentClass = allClasses[0];
       currentGrade = getGrade(currentClass) || currentGrade;
       localStorage.setItem('selected_class', currentClass);
       localStorage.setItem('saved_grade', currentGrade);
@@ -212,71 +819,89 @@
         .sort((a, b) => Number(a) - Number(b));
 
       els.gradeRow.innerHTML = grades.map(g =>
-        `<button type="button" class="chip ${g === currentGrade ? 'active' : ''}" data-grade="${escapeHtml(g)}">${escapeHtml(g)} параллель</button>`
+        `<button type="button" class="grade-btn ${g === currentGrade ? 'active' : ''}" data-grade="${escapeHtml(g)}">${escapeHtml(g)} параллель</button>`
       ).join('');
 
       const gradeClasses = allClasses.filter(c => getGrade(c) === currentGrade);
-      els.classRow.innerHTML = gradeClasses.map(c =>
-        `<button type="button" class="class-chip ${c === currentClass ? 'active' : ''}" data-class="${escapeHtml(c)}">${escapeHtml(c)}</button>`
+      els.classGrid.innerHTML = gradeClasses.map(c =>
+        `<button type="button" class="class-btn ${c === currentClass ? 'active' : ''}" data-class="${escapeHtml(c)}">${escapeHtml(c)}</button>`
       ).join('');
-
-      els.classSelect.innerHTML = allClasses.map(c =>
-        `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`
-      ).join('');
-      els.classSelect.value = currentClass;
 
       const lessons = DATA.classes[currentClass] || [];
+      const firstNum = lessons.length ? Number(lessons[0].lesson || lessons[0].num || 1) : 1;
       els.sectionTitle.textContent = `Класс ${currentClass}`;
-      els.countPill.textContent = lessons.length
-        ? `${lessons.length} ур. (${lessons[0].lesson || lessons[0].num}–${lessons[lessons.length - 1].lesson || lessons[lessons.length - 1].num} урок)`
-        : 'нет уроков';
+      els.shiftPill.textContent = !lessons.length ? '0 ур.' : (firstNum >= 5 ? `2 смена • ${lessons.length} ур.` : `1 смена • ${lessons.length} ур.`);
+
+      renderStatusForLessons(lessons);
 
       if (!lessons.length) {
-        els.list.innerHTML = '<div class="empty">Для выбранного класса уроков не найдено</div>';
+        els.list.innerHTML = '<div class="empty-state">Уроков для выбранного класса не найдено</div>';
         return;
       }
 
-      els.list.innerHTML = lessons.map((l, i) => {
-        const num = l.lesson || l.num || (i + 1);
-        if (Array.isArray(l.subgroups) && l.subgroups.length) {
-          return `
-            <div class="lesson">
-              <div class="num">${escapeHtml(num)}</div>
-              <div class="subgroups">
-                ${l.subgroups.map(sg => `
-                  <div class="sg-card">
-                    <div class="sg-head"><span>${escapeHtml(sg.group)} подгруппа</span>${badgeHtml(sg.room)}</div>
-                    <div class="subj">${escapeHtml(sg.subject || 'Урок')}</div>
-                    <div class="teacher">${escapeHtml(sg.teacher || '')}</div>
-                  </div>
-                `).join('')}
-              </div>
-            </div>`;
+      const activeNum = getActiveLessonNum();
+      const blocks = [];
+
+      lessons.forEach((l, idx) => {
+        const num = Number(l.lesson || l.num || (idx + 1));
+        const isNow = activeNum === num;
+        const nowBadge = isNow ? '<div class="now-tag">● Сейчас идёт</div>' : '';
+
+        if (idx > 0) {
+          const prevNum = Number(lessons[idx - 1].lesson || lessons[idx - 1].num || idx);
+          if (num > prevNum + 1) {
+            blocks.push(`<div class="break-divider">⏸ Окно (${prevNum + 1} урок свободен)</div>`);
+          } else {
+            const brk = getBreakMinutes(prevNum, num);
+            if (brk >= 15) {
+              blocks.push(`<div class="break-divider">☕ Большая перемена ${brk} мин</div>`);
+            }
+          }
         }
-        if (l.subject || l.room || l.teacher) {
-          return `
-            <div class="lesson">
-              <div class="num">${escapeHtml(num)}</div>
-              <div class="body">
-                <div class="row-main">
-                  <div class="subj">${escapeHtml(l.subject || l.text || '')}</div>
+
+        if (Array.isArray(l.subgroups) && l.subgroups.length) {
+          blocks.push(`
+            <div class="lesson-card ${isNow ? 'is-now' : ''}">
+              ${timeColHtml(num, isNow)}
+              <div class="lesson-content">
+                ${nowBadge}
+                <div class="subgroups-grid">
+                  ${l.subgroups.map(sg => `
+                    <div class="sg-box">
+                      <div class="sg-top"><span>${escapeHtml(sg.group)} подгруппа</span>${badgeHtml(sg.room)}</div>
+                      <div class="subj-name">${escapeHtml(sg.subject || 'Урок')}</div>
+                      <div class="teacher-name">${escapeHtml(sg.teacher || '')}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          `);
+        } else {
+          blocks.push(`
+            <div class="lesson-card ${isNow ? 'is-now' : ''}">
+              ${timeColHtml(num, isNow)}
+              <div class="lesson-content">
+                ${nowBadge}
+                <div class="lesson-main">
+                  <div class="subj-name">${escapeHtml(l.subject || l.text || '')}</div>
                   ${badgeHtml(l.room)}
                 </div>
-                <div class="teacher">${escapeHtml(l.teacher || '')}</div>
+                ${l.teacher ? `<div class="teacher-name">${escapeHtml(l.teacher)}</div>` : ''}
               </div>
-            </div>`;
+            </div>
+          `);
         }
-        return `
-          <div class="lesson">
-            <div class="num">${escapeHtml(num)}</div>
-            <div class="body"><div class="subj">${escapeHtml(l.text || '')}</div></div>
-          </div>`;
-      }).join('');
+      });
+
+      els.list.innerHTML = blocks.join('');
     }
 
     function renderTeacherUI() {
       if (!DATA || !DATA.classes) return;
-      const query = normStr(els.teacherInput.value);
+      const rawQuery = els.teacherInput.value;
+      els.clearTeacherBtn.style.display = rawQuery ? 'block' : 'none';
+      const query = normStr(rawQuery);
       const filteredTeachers = ALL_TEACHERS.filter(t => !query || normStr(t).includes(query));
 
       if ((!currentTeacher || !filteredTeachers.includes(currentTeacher)) && filteredTeachers.length) {
@@ -287,16 +912,8 @@
         `<button type="button" class="teacher-chip ${t === currentTeacher ? 'active' : ''}" data-teacher="${escapeHtml(t)}">${escapeHtml(t)}</button>`
       ).join('');
 
-      if (!filteredTeachers.length && !query) {
-        els.sectionTitle.textContent = 'Поиск учителя';
-        els.countPill.textContent = '0 ур.';
-        els.list.innerHTML = '<div class="empty">Список учителей пуст</div>';
-        return;
-      }
-
-      // Если выбран конкретный учитель из чипов — показываем его уроки; иначе ищем по подстроке в text/teacher
       const targetExact = filteredTeachers.includes(currentTeacher) ? currentTeacher : '';
-      els.sectionTitle.textContent = targetExact || (els.teacherInput.value.trim() ? `Поиск: ${els.teacherInput.value.trim()}` : 'Выберите учителя');
+      els.sectionTitle.textContent = targetExact || (rawQuery.trim() ? `Поиск: ${rawQuery.trim()}` : 'Выберите учителя');
 
       const hits = [];
       Object.entries(DATA.classes).forEach(([cls, lessons]) => {
@@ -307,7 +924,7 @@
               const tName = (sg.teacher || '').trim();
               const matched = targetExact ? (tName === targetExact) : (query && normStr(tName).includes(query));
               if (matched) {
-                hits.push({ num, cls: `${cls} (${sg.group} гр.)`, subject: sg.subject, room: sg.room, teacher: tName });
+                hits.push({ lesson: num, num, cls: `${cls} (${sg.group} гр.)`, subject: sg.subject, room: sg.room, teacher: tName });
               }
             });
           } else {
@@ -316,37 +933,116 @@
               ? (tName === targetExact)
               : (query && (normStr(tName).includes(query) || normStr(l.text).includes(query)));
             if (matched) {
-              hits.push({ num, cls, subject: l.subject || l.text, room: l.room, teacher: tName });
+              hits.push({ lesson: num, num, cls, subject: l.subject || l.text, room: l.room, teacher: tName });
             }
           }
         });
       });
 
       hits.sort((a, b) => a.num - b.num || a.cls.localeCompare(b.cls, 'ru'));
-      els.countPill.textContent = `${hits.length} ур.`;
+      els.shiftPill.textContent = `${hits.length} ур.`;
+      renderStatusForLessons(hits);
 
       if (!hits.length) {
-        els.list.innerHTML = '<div class="empty">Уроков для этого учителя не найдено</div>';
+        els.list.innerHTML = '<div class="empty-state">Уроков для этого учителя не найдено</div>';
         return;
       }
 
-      els.list.innerHTML = hits.map(h => `
-        <div class="lesson">
-          <div class="num">${escapeHtml(h.num || '•')}</div>
-          <div class="body">
-            <div class="row-main">
-              <div class="subj">${escapeHtml(h.cls)} — ${escapeHtml(h.subject || '')}</div>
-              ${badgeHtml(h.room)}
+      const activeNum = getActiveLessonNum();
+      const blocks = [];
+      hits.forEach((h, idx) => {
+        const isNow = activeNum === h.num;
+        if (idx > 0 && h.num > hits[idx - 1].num + 1) {
+          const gapCount = h.num - hits[idx - 1].num - 1;
+          blocks.push(`<div class="break-divider">⏸ Окно между уроками (${gapCount} ур.)</div>`);
+        }
+        blocks.push(`
+          <div class="lesson-card ${isNow ? 'is-now' : ''}">
+            ${timeColHtml(h.num, isNow)}
+            <div class="lesson-content">
+              ${isNow ? '<div class="now-tag">● Сейчас идёт</div>' : ''}
+              <div class="lesson-main">
+                <div class="subj-name">${escapeHtml(h.cls)} — ${escapeHtml(h.subject || '')}</div>
+                ${badgeHtml(h.room)}
+              </div>
+              <div class="teacher-name">${escapeHtml(h.teacher || '')}</div>
             </div>
-            <div class="teacher">${escapeHtml(h.teacher || '')}</div>
           </div>
-        </div>
-      `).join('');
+        `);
+      });
+
+      els.list.innerHTML = blocks.join('');
     }
 
-    // Обработчики событий через делегирование
+    function renderBellsUI() {
+      els.statusBanner.style.display = 'none';
+      const activeNum = getActiveLessonNum();
+      const rows = Object.entries(BELLS).map(([numStr, b]) => {
+        const n = Number(numStr);
+        const brk = getBreakMinutes(n, n + 1);
+        const brkLabel = brk > 0 ? `перемена ${brk} мин` : 'конец смены';
+        return `
+          <div class="bells-row ${activeNum === n ? 'is-now' : ''}">
+            <div class="bells-num">${n} урок</div>
+            <div class="bells-time">${b.start} – ${b.end}</div>
+            <div class="bells-break">${brkLabel}</div>
+          </div>
+        `;
+      }).join('');
+
+      els.list.innerHTML = `<div class="bells-card">${rows}</div>`;
+    }
+
+    function buildShareText() {
+      if (!DATA || !DATA.classes) return '';
+      const dateStr = (DATA.meta && DATA.meta.date) ? DATA.meta.date : '';
+      const wd = (DATA.meta && DATA.meta.weekday) ? ` (${DATA.meta.weekday})` : '';
+      if (mode === 'class') {
+        const lessons = DATA.classes[currentClass] || [];
+        const lines = [`📅 Расписание ${currentClass} на ${dateStr}${wd}:`];
+        lessons.forEach(l => {
+          const n = l.lesson || l.num;
+          const t = BELLS[n] ? ` (${BELLS[n].start}–${BELLS[n].end})` : '';
+          if (Array.isArray(l.subgroups)) {
+            lines.push(`${n} ур.${t}:`);
+            l.subgroups.forEach(sg => {
+              lines.push(`  • ${sg.group} гр: ${sg.subject} [${sg.room}]`);
+            });
+          } else {
+            lines.push(`${n} ур.${t}: ${l.subject || l.text} [${l.room || '—'}]`);
+          }
+        });
+        lines.push(`\n🌐 ${location.origin}${location.pathname}`);
+        return lines.join('\n');
+      }
+      return `${els.sectionTitle.textContent} — ${location.href}`;
+    }
+
+    function showToast(msg) {
+      els.toast.textContent = msg;
+      els.toast.classList.add('show');
+      setTimeout(() => els.toast.classList.remove('show'), 2200);
+    }
+
+    els.shareBtn.addEventListener('click', async () => {
+      const text = buildShareText();
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: els.title.textContent, text });
+          return;
+        } catch (_) {}
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast('Расписание скопировано!');
+      } catch (_) {
+        showToast('Не удалось скопировать');
+      }
+    });
+
     els.tabClass.addEventListener('click', () => setMode('class'));
     els.tabTeacher.addEventListener('click', () => setMode('teacher'));
+    els.tabBells.addEventListener('click', () => setMode('bells'));
 
     els.gradeRow.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-grade]');
@@ -359,16 +1055,10 @@
       renderClassUI();
     });
 
-    els.classRow.addEventListener('click', (e) => {
+    els.classGrid.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-class]');
       if (!btn) return;
       currentClass = btn.getAttribute('data-class');
-      renderClassUI();
-    });
-
-    els.classSelect.addEventListener('change', (e) => {
-      currentClass = e.target.value;
-      currentGrade = getGrade(currentClass) || currentGrade;
       renderClassUI();
     });
 
@@ -385,6 +1075,18 @@
       renderTeacherUI();
     });
 
+    els.clearTeacherBtn.addEventListener('click', () => {
+      els.teacherInput.value = '';
+      currentTeacher = '';
+      renderTeacherUI();
+      els.teacherInput.focus();
+    });
+
+    // Автообновление живого таймера раз в 30 секунд
+    setInterval(() => {
+      if (DATA) renderCurrentView();
+    }, 30000);
+
     fetch('./schedule.json?t=' + Date.now())
       .then(r => {
         if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -397,14 +1099,14 @@
           els.school.textContent = json.meta.school;
         }
         if (json.meta && json.meta.date) {
-          els.title.textContent = `Расписание на ${json.meta.date}`;
+          const wd = json.meta.weekday ? ` (${json.meta.weekday})` : '';
+          els.title.textContent = `На ${json.meta.date}${wd}`;
         }
-        const weekday = (json.meta && json.meta.weekday) ? ` (${json.meta.weekday})` : '';
-        els.meta.textContent = `${json.source_file || 'Расписание'}${weekday} • Обновлено: ${json.updated_at || '—'}`;
-        renderClassUI();
+        els.meta.textContent = `Обновлено из MAX: ${json.updated_at || '—'}`;
+        renderCurrentView();
       })
       .catch(err => {
-        els.meta.textContent = 'Ошибка загрузки schedule.json: ' + err.message;
+        els.meta.textContent = 'Ошибка загрузки расписания: ' + err.message;
       });
   </script>
 </body>

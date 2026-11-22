@@ -17,6 +17,22 @@ WEBAPP_URL = os.environ.get(
     "https://wwteamw.github.io/school-schedule/",
 )
 
+BELLS = {
+    1: "08:00–08:40",
+    2: "08:50–09:30",
+    3: "09:50–10:30",
+    4: "10:50–11:30",
+    5: "11:50–12:30",
+    6: "12:40–13:20",
+    7: "13:30–14:10",
+    8: "14:20–15:00",
+    9: "15:20–16:00",
+    10: "16:15–16:55",
+    11: "17:05–17:45",
+    12: "17:55–18:35",
+    13: "18:40–19:20",
+}
+
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
@@ -39,7 +55,7 @@ def grades_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text=f"{g} класс", callback_data=f"grade:{g}") for g in grades[4:]],
     ]
     if WEBAPP_URL:
-        rows.append([InlineKeyboardButton(text="🌐 Открыть сайт расписания", web_app=WebAppInfo(url=WEBAPP_URL))])
+        rows.append([InlineKeyboardButton(text="🌐 Открыть удобный сайт", web_app=WebAppInfo(url=WEBAPP_URL))])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -67,17 +83,18 @@ def format_class_schedule(data: dict, cls_name: str) -> str:
         lines.append("Уроков не найдено.")
         return "\n".join(lines)
     for item in lessons:
-        num = item.get("lesson") or item.get("num") or ""
+        num = int(item.get("lesson") or item.get("num") or 0)
+        bell = f" <code>{BELLS[num]}</code>" if num in BELLS else ""
         if "subgroups" in item:
-            lines.append(f"<b>{num} урок:</b>")
+            lines.append(f"<b>{num} ур.</b>{bell}:")
             for sg in item["subgroups"]:
                 room = "💻 ДИСТ" if sg["room"] == "ДИСТ" else f"каб. {sg['room']}"
                 lines.append(f"  • {sg['group']} гр.: {sg['subject']} ({room}) — <i>{sg['teacher']}</i>")
         elif "subject" in item:
             room = "💻 ДИСТ" if item["room"] == "ДИСТ" else f"каб. {item['room']}"
-            lines.append(f"<b>{num}. {item['subject']}</b> ({room})\n    └ <i>{item['teacher']}</i>")
+            lines.append(f"<b>{num} ур.</b>{bell} — <b>{item['subject']}</b> ({room})\n    └ <i>{item['teacher']}</i>")
         else:
-            lines.append(f"<b>{num}.</b> {item.get('text', '')}")
+            lines.append(f"<b>{num} ур.</b>{bell} — {item.get('text', '')}")
     return "\n".join(lines)
 
 
@@ -130,24 +147,25 @@ async def text_lookup(message: Message):
     if q in data.get("classes", {}):
         await message.answer(format_class_schedule(data, q), parse_mode="HTML", reply_markup=grades_kb())
         return
-    q_low = message.text.strip().lower()
+    q_low = message.text.strip().lower().replace("ё", "е")
     matches = []
     for cls_name, lessons in data.get("classes", {}).items():
         for l in lessons:
-            num = l.get("lesson") or int(l.get("num") or 0)
+            num = int(l.get("lesson") or l.get("num") or 0)
             if "subgroups" in l:
                 for sg in l["subgroups"]:
-                    if q_low in sg.get("teacher", "").lower():
+                    if q_low in sg.get("teacher", "").lower().replace("ё", "е"):
                         matches.append((num, sg["teacher"], f"{cls_name} ({sg['group']} гр.)", sg["subject"], sg["room"]))
-            elif q_low in l.get("teacher", "").lower():
+            elif q_low in l.get("teacher", "").lower().replace("ё", "е"):
                 matches.append((num, l["teacher"], cls_name, l["subject"], l["room"]))
     if matches:
         matches.sort(key=lambda x: x[0])
         teacher_name = matches[0][1]
         lines = [f"👩‍🏫 <b>{teacher_name}</b>:\n"]
         for num, _, cls_str, subj, room in matches:
+            bell = f" <code>{BELLS[num]}</code>" if num in BELLS else ""
             r_str = "💻 ДИСТ" if room == "ДИСТ" else f"каб. {room}"
-            lines.append(f"<b>{num} ур.</b> — {cls_str}: {subj} ({r_str})")
+            lines.append(f"<b>{num} ур.</b>{bell} — {cls_str}: {subj} ({r_str})")
         await message.answer("\n".join(lines), parse_mode="HTML")
     else:
         await message.answer("Не нашёл такой класс или учителя. Напишите, например, <code>5 А</code> или фамилию учителя.", parse_mode="HTML")
