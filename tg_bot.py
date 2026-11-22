@@ -1,8 +1,10 @@
 import os
+import re
 import json
 import time
 import asyncio
 import urllib.request
+from datetime import datetime
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.filters import CommandStart
@@ -17,24 +19,59 @@ WEBAPP_URL = os.environ.get(
     "https://wwteamw.github.io/school-schedule/",
 )
 
-BELLS = {
+BELLS_MONDAY = {
+    1: "08:00–08:30",
+    2: "08:40–09:20",
+    3: "09:30–10:10",
+    4: "10:30–11:10",
+    5: "11:30–12:10",
+    6: "12:20–13:00",
+    7: "13:10–13:50",
+    8: "14:00–14:40",
+    9: "15:00–15:40",
+    10: "15:50–16:30",
+    11: "16:40–17:20",
+    12: "17:30–18:10",
+    13: "18:20–19:00",
+}
+
+BELLS_REGULAR = {
     1: "08:00–08:40",
     2: "08:50–09:30",
-    3: "09:50–10:30",
-    4: "10:50–11:30",
-    5: "11:50–12:30",
-    6: "12:40–13:20",
-    7: "13:30–14:10",
-    8: "14:20–15:00",
-    9: "15:20–16:00",
-    10: "16:15–16:55",
-    11: "17:05–17:45",
-    12: "17:55–18:35",
-    13: "18:40–19:20",
+    3: "09:40–10:20",
+    4: "10:40–11:20",
+    5: "11:40–12:20",
+    6: "12:30–13:10",
+    7: "13:20–14:00",
+    8: "14:10–14:50",
+    9: "15:10–15:50",
+    10: "16:00–16:40",
+    11: "16:50–17:30",
+    12: "17:40–18:20",
+    13: "18:30–19:10",
 }
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
+
+
+def get_bells_for_schedule(data: dict) -> dict:
+    meta = data.get("meta") or {}
+    wd = (meta.get("weekday") or "").lower()
+    if "понедельник" in wd:
+        return BELLS_MONDAY
+    if wd:
+        return BELLS_REGULAR
+    date_raw = meta.get("date") or data.get("source_file") or ""
+    m = re.search(r"(\d{1,2})[._-](\d{1,2})[._-](\d{4})", date_raw)
+    if m:
+        try:
+            dt = datetime(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+            if dt.weekday() == 0:
+                return BELLS_MONDAY
+        except ValueError:
+            pass
+    return BELLS_REGULAR
 
 
 def load_schedule() -> dict:
@@ -75,6 +112,7 @@ def classes_kb(data: dict, grade: str) -> InlineKeyboardMarkup:
 
 def format_class_schedule(data: dict, cls_name: str) -> str:
     meta = data.get("meta") or {}
+    bells = get_bells_for_schedule(data)
     date_str = meta.get("date") or data.get("source_file") or ""
     weekday = f" ({meta['weekday']})" if meta.get("weekday") else ""
     lessons = data.get("classes", {}).get(cls_name, [])
@@ -84,7 +122,7 @@ def format_class_schedule(data: dict, cls_name: str) -> str:
         return "\n".join(lines)
     for item in lessons:
         num = int(item.get("lesson") or item.get("num") or 0)
-        bell = f" <code>{BELLS[num]}</code>" if num in BELLS else ""
+        bell = f" <code>{bells[num]}</code>" if num in bells else ""
         if "subgroups" in item:
             lines.append(f"<b>{num} ур.</b>{bell}:")
             for sg in item["subgroups"]:
@@ -147,6 +185,7 @@ async def text_lookup(message: Message):
     if q in data.get("classes", {}):
         await message.answer(format_class_schedule(data, q), parse_mode="HTML", reply_markup=grades_kb())
         return
+    bells = get_bells_for_schedule(data)
     q_low = message.text.strip().lower().replace("ё", "е")
     matches = []
     for cls_name, lessons in data.get("classes", {}).items():
@@ -163,7 +202,7 @@ async def text_lookup(message: Message):
         teacher_name = matches[0][1]
         lines = [f"👩‍🏫 <b>{teacher_name}</b>:\n"]
         for num, _, cls_str, subj, room in matches:
-            bell = f" <code>{BELLS[num]}</code>" if num in BELLS else ""
+            bell = f" <code>{bells[num]}</code>" if num in bells else ""
             r_str = "💻 ДИСТ" if room == "ДИСТ" else f"каб. {room}"
             lines.append(f"<b>{num} ур.</b>{bell} — {cls_str}: {subj} ({r_str})")
         await message.answer("\n".join(lines), parse_mode="HTML")

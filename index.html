@@ -250,6 +250,29 @@
       font-weight: 700;
     }
 
+    /* Переключатель дня во вкладке Звонки */
+    .bells-day-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .bells-day-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 9px 10px;
+      border-radius: 11px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .bells-day-btn.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
     /* Сводка дня / Живой таймер */
     .status-banner {
       background: var(--card);
@@ -276,7 +299,7 @@
       box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.22);
       flex-shrink: 0;
     }
-    .status-right { color: var(--muted); font-size: 12px; white-space: nowrap; font-weight: 600; }
+    .status-right { color: var(--muted); font-size: 12px; white-space: nowrap; font-weight: 600; font-variant-numeric: tabular-nums; }
 
     /* Заголовок секции с кнопкой Поделиться */
     .section-bar {
@@ -286,7 +309,7 @@
       gap: 8px;
       margin: 4px 2px 10px;
     }
-    .section-title { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .section-title { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .shift-pill {
       font-size: 11px;
       font-weight: 700;
@@ -304,6 +327,7 @@
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
+      flex-shrink: 0;
     }
     .share-btn:hover { color: var(--text); border-color: var(--accent); }
 
@@ -335,6 +359,7 @@
       border-right: 1px solid var(--border);
       flex-shrink: 0;
       text-align: center;
+      font-variant-numeric: tabular-nums;
     }
     .lesson-num {
       font-size: 15px;
@@ -403,7 +428,7 @@
       margin-bottom: 4px;
     }
 
-    /* Строка большой перемены или окна */
+    /* Строка большой перемены (только 20 мин) или окна */
     .break-divider {
       display: flex;
       align-items: center;
@@ -436,9 +461,11 @@
     }
     .bells-row:last-child { border-bottom: none; }
     .bells-row.is-now { background: var(--now-soft); }
-    .bells-num { font-weight: 800; color: var(--accent); min-width: 72px; }
+    .bells-num { font-weight: 800; color: var(--accent); min-width: 82px; }
+    .bells-dur { font-size: 11px; font-weight: 600; color: var(--muted); margin-left: 4px; }
     .bells-time { font-weight: 700; font-variant-numeric: tabular-nums; }
-    .bells-break { font-size: 12px; color: var(--muted); min-width: 95px; text-align: right; }
+    .bells-break { font-size: 12px; color: var(--muted); min-width: 105px; text-align: right; }
+    .bells-break.big { color: var(--dist-text); font-weight: 700; }
 
     .empty-state {
       color: var(--muted);
@@ -535,21 +562,38 @@
   <div class="toast" id="toast">Скопировано в буфер обмена</div>
 
   <script>
-    // Сетка звонков по сквозным номерам уроков (40 минут, начало в 08:00 МСК)
-    const BELLS = {
+    // Понедельник: 1-й урок 30 минут (08:00–08:30), большие перемены по 20 мин после 3, 4 и 8 урока
+    const BELLS_MONDAY = {
+      1:  { start: '08:00', end: '08:30' },
+      2:  { start: '08:40', end: '09:20' },
+      3:  { start: '09:30', end: '10:10' },
+      4:  { start: '10:30', end: '11:10' },
+      5:  { start: '11:30', end: '12:10' },
+      6:  { start: '12:20', end: '13:00' },
+      7:  { start: '13:10', end: '13:50' },
+      8:  { start: '14:00', end: '14:40' },
+      9:  { start: '15:00', end: '15:40' },
+      10: { start: '15:50', end: '16:30' },
+      11: { start: '16:40', end: '17:20' },
+      12: { start: '17:30', end: '18:10' },
+      13: { start: '18:20', end: '19:00' }
+    };
+
+    // Вторник–пятница: все уроки по 40 минут, обычные перемены по 10 мин, большие по 20 мин после 3, 4 и 8 урока
+    const BELLS_REGULAR = {
       1:  { start: '08:00', end: '08:40' },
       2:  { start: '08:50', end: '09:30' },
-      3:  { start: '09:50', end: '10:30' },
-      4:  { start: '10:50', end: '11:30' },
-      5:  { start: '11:50', end: '12:30' },
-      6:  { start: '12:40', end: '13:20' },
-      7:  { start: '13:30', end: '14:10' },
-      8:  { start: '14:20', end: '15:00' },
-      9:  { start: '15:20', end: '16:00' },
-      10: { start: '16:15', end: '16:55' },
-      11: { start: '17:05', end: '17:45' },
-      12: { start: '17:55', end: '18:35' },
-      13: { start: '18:40', end: '19:20' }
+      3:  { start: '09:40', end: '10:20' },
+      4:  { start: '10:40', end: '11:20' },
+      5:  { start: '11:40', end: '12:20' },
+      6:  { start: '12:30', end: '13:10' },
+      7:  { start: '13:20', end: '14:00' },
+      8:  { start: '14:10', end: '14:50' },
+      9:  { start: '15:10', end: '15:50' },
+      10: { start: '16:00', end: '16:40' },
+      11: { start: '16:50', end: '17:30' },
+      12: { start: '17:40', end: '18:20' },
+      13: { start: '18:30', end: '19:10' }
     };
 
     if (window.Telegram && window.Telegram.WebApp) {
@@ -594,6 +638,7 @@
     let DATA = null;
     let ALL_TEACHERS = [];
     let mode = 'class';
+    let bellsTabDay = null; // 'monday' | 'regular'
     let currentGrade = localStorage.getItem('saved_grade') || '5';
     let currentClass = localStorage.getItem('selected_class') || '5 А';
     let currentTeacher = localStorage.getItem('selected_teacher') || '';
@@ -611,15 +656,33 @@
       syncThemeIcon();
     });
 
+    function isScheduleMonday() {
+      if (!DATA) return false;
+      const wd = ((DATA.meta && DATA.meta.weekday) || '').toLowerCase();
+      if (wd.includes('понедельник')) return true;
+      if (wd && !wd.includes('понедельник')) return false;
+      const dateRaw = (DATA.meta && DATA.meta.date) || DATA.source_file || '';
+      const m = dateRaw.match(/(\d{1,2})[._-](\d{1,2})[._-](\d{4})/);
+      if (m) {
+        const dt = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+        return dt.getDay() === 1;
+      }
+      return false;
+    }
+
+    function getActiveBells() {
+      return isScheduleMonday() ? BELLS_MONDAY : BELLS_REGULAR;
+    }
+
     function toMin(hhmm) {
       if (!hhmm) return -1;
       const [h, m] = hhmm.split(':').map(Number);
       return h * 60 + m;
     }
 
-    function getBreakMinutes(numA, numB) {
-      if (numB !== numA + 1 || !BELLS[numA] || !BELLS[numB]) return 0;
-      return Math.max(0, toMin(BELLS[numB].start) - toMin(BELLS[numA].end));
+    function getBreakMinutes(bellsMap, numA, numB) {
+      if (numB !== numA + 1 || !bellsMap[numA] || !bellsMap[numB]) return 0;
+      return Math.max(0, toMin(bellsMap[numB].start) - toMin(bellsMap[numA].end));
     }
 
     function getMskNow() {
@@ -633,8 +696,7 @@
       parts.forEach(p => { map[p.type] = p.value; });
       return {
         dateStr: `${map.day}.${map.month}.${map.year}`,
-        minutes: Number(map.hour) * 60 + Number(map.minute),
-        timeStr: `${map.hour}:${map.minute}`
+        minutes: Number(map.hour) * 60 + Number(map.minute)
       };
     }
 
@@ -643,10 +705,10 @@
       return DATA.meta.date.trim() === getMskNow().dateStr;
     }
 
-    function getActiveLessonNum() {
+    function getActiveLessonNum(bellsMap) {
       if (!isScheduleToday()) return null;
       const cur = getMskNow().minutes;
-      for (const [numStr, b] of Object.entries(BELLS)) {
+      for (const [numStr, b] of Object.entries(bellsMap)) {
         if (cur >= toMin(b.start) && cur < toMin(b.end)) {
           return Number(numStr);
         }
@@ -700,8 +762,8 @@
       return Array.from(set).sort((a, b) => a.localeCompare(b, 'ru'));
     }
 
-    function timeColHtml(num, isNow) {
-      const b = BELLS[num];
+    function timeColHtml(bellsMap, num) {
+      const b = bellsMap[num];
       return `
         <div class="time-col">
           <div class="lesson-num">${escapeHtml(num)} ур.</div>
@@ -715,6 +777,7 @@
         els.statusBanner.style.display = 'none';
         return;
       }
+      const bellsMap = getActiveBells();
       const nums = lessons.map(l => Number(l.lesson || l.num || 0)).filter(n => n > 0);
       if (!nums.length) {
         els.statusBanner.style.display = 'none';
@@ -722,8 +785,8 @@
       }
       const firstNum = Math.min(...nums);
       const lastNum = Math.max(...nums);
-      const startSpan = BELLS[firstNum] ? BELLS[firstNum].start : '';
-      const endSpan = BELLS[lastNum] ? BELLS[lastNum].end : '';
+      const startSpan = bellsMap[firstNum] ? bellsMap[firstNum].start : '';
+      const endSpan = bellsMap[lastNum] ? bellsMap[lastNum].end : '';
       const timeRangeText = (startSpan && endSpan) ? `${startSpan}–${endSpan}` : `${firstNum}–${lastNum} ур.`;
 
       els.statusBanner.style.display = 'flex';
@@ -731,35 +794,36 @@
         els.statusBanner.classList.remove('live');
         const dateTitle = (DATA.meta && DATA.meta.date) ? DATA.meta.date : '';
         const wd = (DATA.meta && DATA.meta.weekday) ? `${DATA.meta.weekday}, ` : '';
-        els.statusLeft.innerHTML = `<span>🗓️ На ${escapeHtml(wd + dateTitle)}</span>`;
+        const monNote = isScheduleMonday() ? ' • звонки Пн' : '';
+        els.statusLeft.innerHTML = `<span>🗓️ На ${escapeHtml(wd + dateTitle)}${monNote}</span>`;
         els.statusRight.textContent = `🕗 ${timeRangeText} (${lessons.length} ур.)`;
         return;
       }
 
       const cur = getMskNow().minutes;
-      const firstStart = BELLS[firstNum] ? toMin(BELLS[firstNum].start) : -1;
-      const lastEnd = BELLS[lastNum] ? toMin(BELLS[lastNum].end) : -1;
+      const firstStart = bellsMap[firstNum] ? toMin(bellsMap[firstNum].start) : -1;
+      const lastEnd = bellsMap[lastNum] ? toMin(bellsMap[lastNum].end) : -1;
 
       if (firstStart > 0 && cur < firstStart) {
         const diff = firstStart - cur;
         els.statusBanner.classList.toggle('live', diff <= 60);
         els.statusLeft.innerHTML = diff <= 60
           ? `<span class="pulse-dot"></span><span>До начала ${firstNum}-го урока: ${diff} мин</span>`
-          : `<span>Начало занятий в ${BELLS[firstNum].start}</span>`;
-        els.statusRight.textContent = `${timeRangeText}`;
+          : `<span>Начало занятий в ${bellsMap[firstNum].start}</span>`;
+        els.statusRight.textContent = timeRangeText;
         return;
       }
 
       if (lastEnd > 0 && cur >= lastEnd) {
         els.statusBanner.classList.remove('live');
         els.statusLeft.innerHTML = `<span>✅ Уроки на сегодня завершены</span>`;
-        els.statusRight.textContent = `${timeRangeText}`;
+        els.statusRight.textContent = timeRangeText;
         return;
       }
 
       for (let i = 0; i < nums.length; i++) {
         const n = nums[i];
-        const b = BELLS[n];
+        const b = bellsMap[n];
         if (!b) continue;
         const s = toMin(b.start), e = toMin(b.end);
         if (cur >= s && cur < e) {
@@ -770,7 +834,7 @@
         }
         if (i + 1 < nums.length) {
           const nextN = nums[i + 1];
-          const nextB = BELLS[nextN];
+          const nextB = bellsMap[nextN];
           if (nextB && cur >= e && cur < toMin(nextB.start)) {
             els.statusBanner.classList.add('live');
             els.statusLeft.innerHTML = `<span class="pulse-dot"></span><span>Перемена • до ${nextN}-го урока ${toMin(nextB.start) - cur} мин</span>`;
@@ -782,7 +846,7 @@
 
       els.statusBanner.classList.remove('live');
       els.statusLeft.innerHTML = `<span>Расписание на сегодня</span>`;
-      els.statusRight.textContent = `${timeRangeText}`;
+      els.statusRight.textContent = timeRangeText;
     }
 
     function setMode(nextMode) {
@@ -839,7 +903,8 @@
         return;
       }
 
-      const activeNum = getActiveLessonNum();
+      const bellsMap = getActiveBells();
+      const activeNum = getActiveLessonNum(bellsMap);
       const blocks = [];
 
       lessons.forEach((l, idx) => {
@@ -852,8 +917,9 @@
           if (num > prevNum + 1) {
             blocks.push(`<div class="break-divider">⏸ Окно (${prevNum + 1} урок свободен)</div>`);
           } else {
-            const brk = getBreakMinutes(prevNum, num);
-            if (brk >= 15) {
+            const brk = getBreakMinutes(bellsMap, prevNum, num);
+            // Показываем плашку большой перемены только там, где она реально 20 минут (после 3, 4 и 8 урока)
+            if (brk >= 20) {
               blocks.push(`<div class="break-divider">☕ Большая перемена ${brk} мин</div>`);
             }
           }
@@ -862,7 +928,7 @@
         if (Array.isArray(l.subgroups) && l.subgroups.length) {
           blocks.push(`
             <div class="lesson-card ${isNow ? 'is-now' : ''}">
-              ${timeColHtml(num, isNow)}
+              ${timeColHtml(bellsMap, num)}
               <div class="lesson-content">
                 ${nowBadge}
                 <div class="subgroups-grid">
@@ -880,7 +946,7 @@
         } else {
           blocks.push(`
             <div class="lesson-card ${isNow ? 'is-now' : ''}">
-              ${timeColHtml(num, isNow)}
+              ${timeColHtml(bellsMap, num)}
               <div class="lesson-content">
                 ${nowBadge}
                 <div class="lesson-main">
@@ -948,17 +1014,26 @@
         return;
       }
 
-      const activeNum = getActiveLessonNum();
+      const bellsMap = getActiveBells();
+      const activeNum = getActiveLessonNum(bellsMap);
       const blocks = [];
       hits.forEach((h, idx) => {
         const isNow = activeNum === h.num;
-        if (idx > 0 && h.num > hits[idx - 1].num + 1) {
-          const gapCount = h.num - hits[idx - 1].num - 1;
-          blocks.push(`<div class="break-divider">⏸ Окно между уроками (${gapCount} ур.)</div>`);
+        if (idx > 0) {
+          const prevNum = hits[idx - 1].num;
+          if (h.num > prevNum + 1) {
+            const gapCount = h.num - prevNum - 1;
+            blocks.push(`<div class="break-divider">⏸ Окно между уроками (${gapCount} ур.)</div>`);
+          } else {
+            const brk = getBreakMinutes(bellsMap, prevNum, h.num);
+            if (brk >= 20) {
+              blocks.push(`<div class="break-divider">☕ Большая перемена ${brk} мин</div>`);
+            }
+          }
         }
         blocks.push(`
           <div class="lesson-card ${isNow ? 'is-now' : ''}">
-            ${timeColHtml(h.num, isNow)}
+            ${timeColHtml(bellsMap, h.num)}
             <div class="lesson-content">
               ${isNow ? '<div class="now-tag">● Сейчас идёт</div>' : ''}
               <div class="lesson-main">
@@ -976,25 +1051,40 @@
 
     function renderBellsUI() {
       els.statusBanner.style.display = 'none';
-      const activeNum = getActiveLessonNum();
-      const rows = Object.entries(BELLS).map(([numStr, b]) => {
+      if (!bellsTabDay) {
+        bellsTabDay = isScheduleMonday() ? 'monday' : 'regular';
+      }
+      const chosenMap = bellsTabDay === 'monday' ? BELLS_MONDAY : BELLS_REGULAR;
+      const activeNum = ((bellsTabDay === 'monday') === isScheduleMonday()) ? getActiveLessonNum(chosenMap) : null;
+
+      const switchHtml = `
+        <div class="bells-day-switch">
+          <button type="button" class="bells-day-btn ${bellsTabDay === 'monday' ? 'active' : ''}" data-bday="monday">Понедельник (1 ур. — 30 мин)</button>
+          <button type="button" class="bells-day-btn ${bellsTabDay === 'regular' ? 'active' : ''}" data-bday="regular">Вт – Пт (все по 40 мин)</button>
+        </div>
+      `;
+
+      const rows = Object.entries(chosenMap).map(([numStr, b]) => {
         const n = Number(numStr);
-        const brk = getBreakMinutes(n, n + 1);
-        const brkLabel = brk > 0 ? `перемена ${brk} мин` : 'конец смены';
+        const dur = toMin(b.end) - toMin(b.start);
+        const brk = getBreakMinutes(chosenMap, n, n + 1);
+        const isBig = brk >= 20;
+        const brkLabel = brk > 0 ? (isBig ? `☕ перемена ${brk} мин` : `перемена ${brk} мин`) : 'конец занятий';
         return `
           <div class="bells-row ${activeNum === n ? 'is-now' : ''}">
-            <div class="bells-num">${n} урок</div>
+            <div class="bells-num">${n} урок <span class="bells-dur">${dur}м</span></div>
             <div class="bells-time">${b.start} – ${b.end}</div>
-            <div class="bells-break">${brkLabel}</div>
+            <div class="bells-break ${isBig ? 'big' : ''}">${brkLabel}</div>
           </div>
         `;
       }).join('');
 
-      els.list.innerHTML = `<div class="bells-card">${rows}</div>`;
+      els.list.innerHTML = `${switchHtml}<div class="bells-card">${rows}</div>`;
     }
 
     function buildShareText() {
       if (!DATA || !DATA.classes) return '';
+      const bellsMap = getActiveBells();
       const dateStr = (DATA.meta && DATA.meta.date) ? DATA.meta.date : '';
       const wd = (DATA.meta && DATA.meta.weekday) ? ` (${DATA.meta.weekday})` : '';
       if (mode === 'class') {
@@ -1002,7 +1092,7 @@
         const lines = [`📅 Расписание ${currentClass} на ${dateStr}${wd}:`];
         lessons.forEach(l => {
           const n = l.lesson || l.num;
-          const t = BELLS[n] ? ` (${BELLS[n].start}–${BELLS[n].end})` : '';
+          const t = bellsMap[n] ? ` (${bellsMap[n].start}–${bellsMap[n].end})` : '';
           if (Array.isArray(l.subgroups)) {
             lines.push(`${n} ур.${t}:`);
             l.subgroups.forEach(sg => {
@@ -1044,6 +1134,13 @@
     els.tabTeacher.addEventListener('click', () => setMode('teacher'));
     els.tabBells.addEventListener('click', () => setMode('bells'));
 
+    els.list.addEventListener('click', (e) => {
+      const bBtn = e.target.closest('[data-bday]');
+      if (!bBtn) return;
+      bellsTabDay = bBtn.getAttribute('data-bday');
+      renderBellsUI();
+    });
+
     els.gradeRow.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-grade]');
       if (!btn || !DATA) return;
@@ -1082,7 +1179,6 @@
       els.teacherInput.focus();
     });
 
-    // Автообновление живого таймера раз в 30 секунд
     setInterval(() => {
       if (DATA) renderCurrentView();
     }, 30000);
@@ -1095,6 +1191,7 @@
       .then(json => {
         DATA = json;
         ALL_TEACHERS = collectTeachers(json.classes);
+        bellsTabDay = isScheduleMonday() ? 'monday' : 'regular';
         if (json.meta && json.meta.school) {
           els.school.textContent = json.meta.school;
         }
