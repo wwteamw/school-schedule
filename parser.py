@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import base64
 import urllib.request
 from datetime import datetime, timezone, timedelta
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
@@ -11,6 +12,7 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 
 GROUP_URL = "https://web.max.ru/-69393426093561"
+CHAT_ID = -69393426093561
 MAX_AUTH = os.environ.get("MAX_AUTH", "").strip()
 MAX_DEVICE_ID = os.environ.get("MAX_DEVICE_ID", "").strip()
 PDF_PATH = "latest.pdf"
@@ -44,31 +46,235 @@ class StringCollector(PDFConverter):
                 self._cur.append((round(added[0].x0, 2), round(added[0].y0, 2), round(added[-1].x1, 2), txt))
 
 
+def extract_token(raw_auth: str) -> str:
+    if raw_auth.startswith("{"):
+        try:
+            obj = json.loads(raw_auth)
+            if isinstance(obj, dict) and obj.get("token"):
+                return str(obj["token"]).strip()
+        except Exception:
+            pass
+    return raw_auth.strip('"').strip("'")
+
+
+def fetch_url_to_pdf(url: str) -> bool:
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36",
+            "Origin": "https://web.max.ru",
+            "Referer": "https://web.max.ru/",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        content = resp.read()
+    if content.startswith(b"%PDF"):
+        with open(PDF_PATH, "wb") as f:
+            f.write(content)
+        return True
+    return False
+
+
 def download_latest_pdf() -> str:
     if not MAX_AUTH or not MAX_DEVICE_ID:
         raise ValueError("Не заданы MAX_AUTH или MAX_DEVICE_ID в GitHub Secrets")
 
-    captured_urls = []
-
-    def handle_ws(ws):
-        def on_frame(payload):
-            if isinstance(payload, str) and "http" in payload:
-                try:
-                    pkt = json.loads(payload)
-                    url = (pkt.get("payload") or {}).get("url") or ""
-                    if url.startswith("http"):
-                        captured_urls.append(url)
-                except Exception:
-                    pass
-        ws.on("framereceived", on_frame)
+    token = extract_token(MAX_AUTH)
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(accept_downloads=True, locale="ru-RU")
+
+        # Перехват Blob-объектов на случай, если web.max.ru качает файл через fetch() -> Blob
+        context.add_init_script(
+            """
+            window.__capturedPdfBlobs = [];
+            const origCreateObjectURL = URL.createObjectURL.bind(URL);
+            URL.createObjectURL = function(obj) {
+                try {
+                    if (obj instanceof Blob && obj.size > 1000) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            if (typeof reader.result === 'string') {
+                                window.__capturedPdfBlobs.push(reader.result);
+                            }
+                        };
+                        reader.readAsDataURL(obj);
+                    }
+                } catch (e) {}
+                return origCreateObjectURL(obj);
+            };
+            """
+        )
+
         page = context.new_page()
-        page.on("websocket", handle_ws)
+        captured_pdf_bytes = []
+        captured_downloads = []
+
+        def on_response(resp):
+            try:
+                ct = (resp.headers.get("content-type") or "").lower()
+                if "pdf" in ct or resp.url.lower().split("?")[0].endswith(".pdf"):
+                    body = resp.body()
+                    if body.startswith(b"%PDF"):
+                        captured_pdf_bytes.append(body)
+            except Exception:
+                pass
+
+        def on_download(dl):
+            captured_downloads.append(dl)
+
+        page.on("response", on_response)
+        page.on("download", on_download)
 
         page.goto("https://web.max.ru/", wait_until="domcontentloaded")
+
+        # Способ 1: Прямой запрос истории и URL скачивания по нативному WebSocket API MAX
+        try:
+            ws_result = page.evaluate(
+                """async ({ token, deviceId, chatId }) => {
+                    return await new Promise((resolve, reject) => {
+                        const ws = new WebSocket("wss://ws-api.oneme.ru/websocket");
+                        let seq = 0;
+                        const pending = new Map();
+                        let waitUrlResolve = null;
+
+                        const timer = setTimeout(() => {
+                            try { ws.close(); } catch (e) {}
+                            reject(new Error("WS timeout"));
+                        }, 22000);
+
+                        function parseSafe(raw) {
+                            const safe = raw.replace(/"(id|messageId|fileId)"\\s*:\\s*(-?\\d{15,})/g, '"$1":"__BIG_$2"');
+                            return JSON.parse(safe);
+                        }
+
+                        function sendPacket(opcode, payloadObj, rawFileId) {
+                            seq += 1;
+                            const curSeq = seq;
+                            return new Promise((res, rej) => {
+                                pending.set(curSeq, { res, rej });
+                                let body = JSON.stringify({ ver: 11, cmd: 0, seq: curSeq, opcode, payload: payloadObj });
+                                if (rawFileId) {
+                                    body = body.replace('"__RAW_FILE_ID__"', rawFileId);
+                                }
+                                ws.send(body);
+                            });
+                        }
+
+                        ws.onmessage = (ev) => {
+                            if (typeof ev.data !== "string") return;
+                            let msg;
+                            try { msg = parseSafe(ev.data); } catch (e) { return; }
+                            if (msg.seq && pending.has(msg.seq) && (msg.cmd === 1 || msg.cmd === 3)) {
+                                const { res, rej } = pending.get(msg.seq);
+                                pending.delete(msg.seq);
+                                if (msg.cmd === 3) rej(new Error(JSON.stringify(msg.payload)));
+                                else res(msg.payload || {});
+                                return;
+                            }
+                            if (waitUrlResolve && msg.payload && typeof msg.payload.url === "string" && msg.payload.url.startsWith("http")) {
+                                const r = waitUrlResolve;
+                                waitUrlResolve = null;
+                                r(msg.payload.url);
+                            }
+                        };
+
+                        ws.onerror = () => reject(new Error("WS error"));
+
+                        ws.onopen = async () => {
+                            try {
+                                await sendPacket(6, {
+                                    userAgent: {
+                                        deviceType: "WEB",
+                                        locale: "ru",
+                                        deviceLocale: "ru",
+                                        osVersion: "Android",
+                                        deviceName: "Firefox",
+                                        headerUserAgent: navigator.userAgent,
+                                        appVersion: "26.19.2",
+                                        screen: "1080x2400 1.0x",
+                                        timezone: "Europe/Moscow"
+                                    },
+                                    deviceId
+                                });
+                                await sendPacket(19, {
+                                    interactive: false,
+                                    token,
+                                    chatsCount: 40,
+                                    chatsSync: 0,
+                                    contactsSync: 0,
+                                    presenceSync: 0,
+                                    draftsSync: 0
+                                });
+                                const hist = await sendPacket(49, {
+                                    chatId,
+                                    from: Date.now(),
+                                    forward: 0,
+                                    backward: 30,
+                                    getMessages: true
+                                });
+                                const msgs = (hist.messages || []).slice().sort((a, b) => (b.time || 0) - (a.time || 0));
+                                let target = null;
+                                for (const m of msgs) {
+                                    for (const att of (m.attaches || [])) {
+                                        const tp = att._type || att.type || "";
+                                        const nm = att.name || att.fileName || "";
+                                        if (tp === "FILE" && nm.toLowerCase().endsWith(".pdf")) {
+                                            target = { m, att, name: nm };
+                                            break;
+                                        }
+                                    }
+                                    if (target) break;
+                                }
+                                if (!target) throw new Error("No PDF in channel history");
+
+                                let directUrl = target.att.url || target.att.baseUrl || "";
+                                const rawMsgId = String(target.m.id).replace(/^__BIG_/, "");
+                                const rawFidVal = target.att.fileId ?? target.att.id;
+                                const isBigFid = typeof rawFidVal === "string" && rawFidVal.startsWith("__BIG_");
+                                const fidPayload = isBigFid ? "__RAW_FILE_ID__" : Number(rawFidVal);
+                                const fidRawDigits = isBigFid ? rawFidVal.replace(/^__BIG_/, "") : null;
+
+                                for (let i = 0; i < 6 && (!directUrl || !directUrl.startsWith("http")); i++) {
+                                    const dl = await sendPacket(88, {
+                                        fileId: fidPayload,
+                                        chatId,
+                                        messageId: rawMsgId
+                                    }, fidRawDigits);
+                                    if (dl.url && dl.url.startsWith("http")) {
+                                        directUrl = dl.url;
+                                        break;
+                                    }
+                                    directUrl = await new Promise((r) => {
+                                        waitUrlResolve = r;
+                                        setTimeout(() => {
+                                            if (waitUrlResolve === r) { waitUrlResolve = null; r(""); }
+                                        }, 2500);
+                                    });
+                                }
+                                clearTimeout(timer);
+                                try { ws.close(); } catch (e) {}
+                                resolve({ url: directUrl, filename: target.name });
+                            } catch (e) {
+                                clearTimeout(timer);
+                                try { ws.close(); } catch (_) {}
+                                reject(e);
+                            }
+                        };
+                    });
+                }""",
+                {"token": token, "deviceId": MAX_DEVICE_ID, "chatId": CHAT_ID},
+            )
+            if ws_result and ws_result.get("url", "").startswith("http"):
+                if fetch_url_to_pdf(ws_result["url"]):
+                    print(f"Скачано напрямую через MAX WebSocket API: {ws_result['filename']}")
+                    browser.close()
+                    return ws_result["filename"]
+        except Exception as ws_err:
+            print(f"WebSocket-метод пропустил скачивание ({ws_err}), перехожу к UI-клику...")
+
+        # Способ 2: UI-клик по кнопке/иконке карточки файла в web.max.ru + перехват Download / Blob / Network
         page.evaluate(
             """([auth, devId]) => {
                 localStorage.setItem('__oneme_auth', auth);
@@ -76,7 +282,6 @@ def download_latest_pdf() -> str:
             }""",
             [MAX_AUTH, MAX_DEVICE_ID],
         )
-
         page.goto(GROUP_URL, wait_until="domcontentloaded")
         try:
             page.wait_for_selector("text=/\\.pdf/i", timeout=25000)
@@ -93,26 +298,53 @@ def download_latest_pdf() -> str:
         last_pdf.scroll_into_view_if_needed()
         filename = last_pdf.inner_text().strip()
 
-        try:
-            with page.expect_download(timeout=20000) as dl_info:
-                last_pdf.click()
-            download = dl_info.value
-            download.save_as(PDF_PATH)
-            suggested = download.suggested_filename or filename
-            browser.close()
-            return suggested
-        except PlaywrightTimeoutError:
-            # Если клик запросил ссылку по WebSocket вместо прямого скачивания
-            page.wait_for_timeout(3000)
-            if captured_urls:
-                req = urllib.request.Request(captured_urls[-1], headers={"User-Agent": "Mozilla/5.0"})
-                with urllib.request.urlopen(req, timeout=30) as resp:
-                    with open(PDF_PATH, "wb") as out:
-                        out.write(resp.read())
+        # Кликаем по кнопке/ссылке/иконке внутри карточки файла, а не только по тексту названия
+        click_targets = [
+            last_pdf.locator("xpath=ancestor::*[.//button or .//a][1]//button").first,
+            last_pdf.locator("xpath=ancestor::*[.//button or .//a][1]//a").first,
+            last_pdf.locator("xpath=ancestor::*[.//svg][1]//svg").first,
+            last_pdf.locator("xpath=.."),
+            last_pdf,
+        ]
+
+        for target in click_targets:
+            try:
+                if target.count() > 0:
+                    target.click(force=True, timeout=3000)
+                    page.wait_for_timeout(3500)
+            except Exception:
+                continue
+
+            if captured_downloads:
+                dl = captured_downloads[-1]
+                dl.save_as(PDF_PATH)
+                res_name = dl.suggested_filename or filename
+                browser.close()
+                return res_name
+
+            if captured_pdf_bytes:
+                with open(PDF_PATH, "wb") as f:
+                    f.write(captured_pdf_bytes[-1])
                 browser.close()
                 return filename
-            browser.close()
-            raise RuntimeError(f"Не удалось скачать PDF после клика по '{filename}'")
+
+            blobs = page.evaluate("() => window.__capturedPdfBlobs || []")
+            for b64_url in reversed(blobs):
+                if "," in b64_url:
+                    raw_bytes = base64.b64decode(b64_url.split(",", 1)[1])
+                    if raw_bytes.startswith(b"%PDF"):
+                        with open(PDF_PATH, "wb") as f:
+                            f.write(raw_bytes)
+                        browser.close()
+                        return filename
+
+        card_html = ""
+        try:
+            card_html = last_pdf.locator("xpath=ancestor::*[3]").evaluate("el => el.outerHTML.slice(0, 800)")
+        except Exception:
+            pass
+        browser.close()
+        raise RuntimeError(f"Не удалось скачать PDF '{filename}'. HTML карточки: {card_html}")
 
 
 def parse_coordinates(pdf_path: str) -> tuple[dict, dict]:
