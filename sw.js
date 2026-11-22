@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shrk-schedule-v5';
+const CACHE_NAME = 'shrk-schedule-v7';
 const CORE_ASSETS = [
   './',
   './index.html',
