@@ -29,6 +29,9 @@
       --corp-b-tx: #d8b4fe;
       --corp-v-bg: rgba(20, 184, 166, 0.16);
       --corp-v-tx: #5eead4;
+      --tg-bg: rgba(56, 189, 248, 0.13);
+      --tg-border: rgba(56, 189, 248, 0.34);
+      --tg-tx: #38bdf8;
       --shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
     }
 
@@ -55,6 +58,9 @@
       --corp-b-tx: #7e22ce;
       --corp-v-bg: rgba(13, 148, 136, 0.1);
       --corp-v-tx: #0f766e;
+      --tg-bg: rgba(2, 132, 199, 0.1);
+      --tg-border: rgba(2, 132, 199, 0.28);
+      --tg-tx: #0284c7;
       --shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
     }
 
@@ -93,7 +99,33 @@
       margin-bottom: 3px;
     }
     h1 { font-size: 21px; margin: 0; font-weight: 800; letter-spacing: -0.01em; }
-    .meta { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+    .meta-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .meta { color: var(--muted); font-size: 12.5px; }
+    .creator-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--tg-bg);
+      border: 1px solid var(--tg-border);
+      color: var(--tg-tx);
+      padding: 2.5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.12s, border-color 0.15s, filter 0.15s;
+    }
+    .creator-chip:hover { filter: brightness(1.1); border-color: var(--tg-tx); }
+    .creator-chip:active { transform: scale(0.96); }
+    .creator-chip svg { width: 13px; height: 13px; fill: currentColor; flex-shrink: 0; }
+    .creator-chip b { font-weight: 800; }
+
     .icon-actions { display: flex; gap: 6px; flex-shrink: 0; }
     .icon-btn {
       background: var(--card-sub);
@@ -510,7 +542,13 @@
         <div>
           <div class="school-tag" id="schoolName">МАОУ «Школа русской культуры»</div>
           <h1 id="title">Расписание уроков</h1>
-          <div class="meta" id="meta">Загрузка актуального расписания...</div>
+          <div class="meta-row">
+            <span class="meta" id="meta">Загрузка актуального расписания...</span>
+            <a class="creator-chip" id="creatorLink" href="https://t.me/cryforsex" target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.94 4.66a1.5 1.5 0 0 0-1.64-.28L2.93 11.45a1.42 1.42 0 0 0 .09 2.67l4.46 1.52 1.72 5.28a1.3 1.3 0 0 0 2.18.5l2.58-2.49 4.56 3.35a1.52 1.52 0 0 0 2.38-.93l2.44-15.17a1.5 1.5 0 0 0-1.4-1.52Zm-3.2 3.19-8.18 7.39a.75.75 0 0 0-.23.43l-.55 2.77-.98-3.02a.75.75 0 0 1 .27-.84l9.38-6.97a.25.25 0 0 1 .29.24Z"/></svg>
+              <span>creator: <b>@cryforsex</b></span>
+            </a>
+          </div>
         </div>
         <div class="icon-actions">
           <button class="icon-btn" id="themeBtn" type="button" title="Сменить тему">🌙</button>
@@ -613,6 +651,7 @@
       school: document.getElementById('schoolName'),
       title: document.getElementById('title'),
       meta: document.getElementById('meta'),
+      creatorLink: document.getElementById('creatorLink'),
       themeBtn: document.getElementById('themeBtn'),
       tabClass: document.getElementById('tabClass'),
       tabTeacher: document.getElementById('tabTeacher'),
@@ -642,6 +681,18 @@
     let currentGrade = localStorage.getItem('saved_grade') || '5';
     let currentClass = localStorage.getItem('selected_class') || '5 А';
     let currentTeacher = localStorage.getItem('selected_teacher') || '';
+
+    els.creatorLink.addEventListener('click', (e) => {
+      if (
+        window.Telegram &&
+        window.Telegram.WebApp &&
+        window.Telegram.WebApp.initData &&
+        typeof window.Telegram.WebApp.openTelegramLink === 'function'
+      ) {
+        e.preventDefault();
+        window.Telegram.WebApp.openTelegramLink('https://t.me/cryforsex');
+      }
+    });
 
     function syncThemeIcon() {
       const isLight = document.documentElement.getAttribute('data-theme') === 'light';
@@ -918,7 +969,6 @@
             blocks.push(`<div class="break-divider">⏸ Окно (${prevNum + 1} урок свободен)</div>`);
           } else {
             const brk = getBreakMinutes(bellsMap, prevNum, num);
-            // Показываем плашку большой перемены только там, где она реально 20 минут (после 3, 4 и 8 урока)
             if (brk >= 20) {
               blocks.push(`<div class="break-divider">☕ Большая перемена ${brk} мин</div>`);
             }
