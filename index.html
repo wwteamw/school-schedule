@@ -37,6 +37,9 @@
       --corp-v-tx: #5eead4;
       --dist-bg: rgba(245, 158, 11, 0.16);
       --dist-tx: #fbbf24;
+      --tg-bg: rgba(56, 189, 248, 0.13);
+      --tg-border: rgba(56, 189, 248, 0.34);
+      --tg-tx: #38bdf8;
     }
 
     [data-theme="light"] {
@@ -61,6 +64,9 @@
       --corp-v-tx: #0f766e;
       --dist-bg: rgba(245, 158, 11, 0.14);
       --dist-tx: #b45309;
+      --tg-bg: rgba(2, 132, 199, 0.1);
+      --tg-border: rgba(2, 132, 199, 0.28);
+      --tg-tx: #0284c7;
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -75,11 +81,11 @@
     }
     .wrap { max-width: 640px; margin: 0 auto; }
 
-    /* Лаконичная верхняя шапка */
+    /* Шапка */
     .topbar {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       gap: 10px;
       padding: 4px 2px 12px;
     }
@@ -97,25 +103,31 @@
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 3px;
+      gap: 7px;
+      margin-top: 5px;
       font-size: 12px;
       color: var(--muted);
     }
-    .dot-sep { opacity: 0.45; }
-    .creator-link {
+    .creator-chip {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      color: var(--muted);
-      text-decoration: none;
+      gap: 5px;
+      background: var(--tg-bg);
+      border: 1px solid var(--tg-border);
+      color: var(--tg-tx);
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 11.5px;
       font-weight: 600;
-      transition: color 0.15s;
+      text-decoration: none;
+      transition: transform 0.12s, border-color 0.15s, filter 0.15s;
     }
-    .creator-link:hover, .creator-link:active { color: var(--accent); }
-    .creator-link svg { width: 12px; height: 12px; fill: #38bdf8; flex-shrink: 0; }
+    .creator-chip:hover { filter: brightness(1.08); border-color: var(--tg-tx); }
+    .creator-chip:active { transform: scale(0.96); }
+    .creator-chip svg { width: 12px; height: 12px; fill: currentColor; flex-shrink: 0; }
+    .creator-chip b { font-weight: 800; }
 
-    .top-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .top-actions { display: flex; gap: 6px; flex-shrink: 0; padding-top: 2px; }
     .top-btn {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -176,7 +188,7 @@
       padding: 0 4px;
     }
 
-    /* Переключатель дней — виден ТОЛЬКО когда реально доступно 2+ дня */
+    /* Переключатель учебных дней (Сегодня / Завтра — всегда под рукой) */
     .day-pills {
       display: flex;
       gap: 6px;
@@ -187,7 +199,7 @@
       background: var(--surface);
       border: 1px solid var(--border);
       color: var(--muted);
-      border-radius: 10px;
+      border-radius: 11px;
       padding: 8px 10px;
       font-size: 13px;
       font-weight: 700;
@@ -208,6 +220,12 @@
       height: 6px;
       border-radius: 50%;
       background: var(--now);
+      flex-shrink: 0;
+    }
+    .wait-tag {
+      font-size: 10.5px;
+      font-weight: 600;
+      opacity: 0.72;
     }
 
     /* Сегментированные вкладки режимов */
@@ -237,7 +255,7 @@
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
     }
 
-    /* Компактная панель управления классом и подгруппой */
+    /* Панель управления классом + кнопка Поделиться */
     .toolbar {
       display: flex;
       align-items: center;
@@ -265,7 +283,7 @@
       align-items: center;
       gap: 6px;
       flex-shrink: 0;
-      transition: transform 0.1s, opacity 0.15s;
+      transition: transform 0.1s;
     }
     .picker-trigger:active { transform: scale(0.97); }
     .picker-chevron {
@@ -285,51 +303,25 @@
       text-overflow: ellipsis;
     }
 
-    .toolbar-right {
-      display: flex;
+    .share-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
       flex-shrink: 0;
+      transition: border-color 0.15s, transform 0.1s;
     }
-
-    /* Мини-фильтр подгруппы */
-    .sg-filter {
-      display: inline-flex;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      padding: 2px;
-    }
-    .sg-btn {
-      background: transparent;
-      border: none;
-      color: var(--muted);
-      font-size: 11.5px;
-      font-weight: 700;
-      padding: 5px 8px;
-      border-radius: 7px;
-      cursor: pointer;
-    }
-    .sg-btn.active {
-      background: var(--surface-2);
-      color: var(--text);
-    }
-
-    .share-icon-btn {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: color 0.15s, border-color 0.15s;
-    }
-    .share-icon-btn:hover { color: var(--text); border-color: var(--border-strong); }
-    .share-icon-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .share-btn:hover { border-color: var(--accent); }
+    .share-btn:active { transform: scale(0.97); }
+    .share-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
 
     /* Выпадающая панель выбора параллели и класса */
     .drawer {
@@ -385,10 +377,8 @@
       color: #fff;
     }
 
-    /* Поиск учителя */
-    .teacher-box {
-      margin-bottom: 10px;
-    }
+    /* Поиск учителя и кабинетов */
+    .filter-box { margin-bottom: 10px; }
     .search-wrap { position: relative; margin-bottom: 8px; }
     .search-input {
       width: 100%;
@@ -415,15 +405,15 @@
       padding: 4px 6px;
       display: none;
     }
-    .teacher-scroll {
+    .horiz-scroll {
       display: flex;
       gap: 6px;
       overflow-x: auto;
       padding-bottom: 4px;
       scrollbar-width: none;
     }
-    .teacher-scroll::-webkit-scrollbar { display: none; }
-    .teacher-chip {
+    .horiz-scroll::-webkit-scrollbar { display: none; }
+    .chip-btn {
       background: var(--surface);
       color: var(--muted);
       border: 1px solid var(--border);
@@ -435,10 +425,59 @@
       white-space: nowrap;
       flex-shrink: 0;
     }
-    .teacher-chip.active {
+    .chip-btn.active {
       background: var(--accent);
       border-color: var(--accent);
       color: #fff;
+    }
+
+    /* Панель раздела Кабинеты */
+    .rooms-mode-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .rooms-mode-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .rooms-mode-btn.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .free-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .free-rooms-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 13px;
+    }
+    .free-rooms-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .free-rooms-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
     }
 
     /* Живой статус — показывается ТОЛЬКО во время учебного дня */
@@ -530,17 +569,6 @@
       line-height: 1.28;
       word-break: break-word;
     }
-    .sg-inline-tag {
-      display: inline-block;
-      font-size: 10.5px;
-      font-weight: 700;
-      color: var(--accent);
-      background: var(--accent-soft);
-      padding: 1px 5px;
-      border-radius: 5px;
-      margin-left: 5px;
-      vertical-align: middle;
-    }
     .teacher-btn {
       background: none;
       border: none;
@@ -555,7 +583,7 @@
     }
     .teacher-btn:hover { color: var(--accent); text-decoration: underline; }
 
-    /* Бейдж кабинета без лишнего слова "каб." */
+    /* Интерактивный бейдж кабинета */
     .room {
       font-size: 12px;
       font-weight: 700;
@@ -563,15 +591,20 @@
       border-radius: 7px;
       background: var(--corp-a-bg);
       color: var(--corp-a-tx);
+      border: 1px solid transparent;
       white-space: nowrap;
       flex-shrink: 0;
       font-variant-numeric: tabular-nums;
+      font-family: inherit;
     }
+    button.room { cursor: pointer; transition: transform 0.1s, border-color 0.15s; }
+    button.room:hover { border-color: currentColor; }
+    button.room:active { transform: scale(0.95); }
     .room.corp-b { background: var(--corp-b-bg); color: var(--corp-b-tx); }
     .room.corp-v { background: var(--corp-v-bg); color: var(--corp-v-tx); }
     .room.dist { background: var(--dist-bg); color: var(--dist-tx); }
 
-    /* Компактное отображение 2 подгрупп (когда выбран режим "Все") */
+    /* Подгруппы */
     .sg-split {
       display: flex;
       flex-direction: column;
@@ -615,50 +648,47 @@
       background: var(--border);
     }
 
-    /* Звонки */
-    .bells-switch {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-    .bells-switch-btn {
+    /* Карточка ожидания завтрашнего расписания */
+    .waiting-card {
       background: var(--surface);
       border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 26px 18px;
+      text-align: center;
+    }
+    .waiting-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .waiting-sub {
+      font-size: 13px;
       color: var(--muted);
-      padding: 8px 10px;
-      border-radius: 10px;
-      font-size: 12.5px;
+      max-width: 420px;
+      margin: 0 auto 14px;
+      line-height: 1.45;
+    }
+    .waiting-actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .action-pill {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      padding: 8px 14px;
+      font-size: 13px;
       font-weight: 700;
       cursor: pointer;
     }
-    .bells-switch-btn.active {
-      background: var(--accent-soft);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-    .bells-card {
-      background: var(--surface);
+    .action-pill.secondary {
+      background: var(--surface-2);
+      color: var(--text);
       border: 1px solid var(--border);
-      border-radius: 13px;
-      overflow: hidden;
     }
-    .bells-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border);
-      font-size: 13.5px;
-      font-variant-numeric: tabular-nums;
-    }
-    .bells-row:last-child { border-bottom: none; }
-    .bells-row.is-now { background: var(--now-soft); }
-    .bells-num { font-weight: 700; color: var(--text); min-width: 70px; }
-    .bells-row.is-now .bells-num { color: var(--now-tx); }
-    .bells-time { font-weight: 700; }
-    .bells-brk { font-size: 12px; color: var(--muted); min-width: 88px; text-align: right; }
-    .bells-brk.big { color: var(--dist-tx); font-weight: 600; }
 
     .empty-state {
       color: var(--muted);
@@ -703,10 +733,9 @@
         <h1 id="title">Расписание</h1>
         <div class="sub-meta">
           <span id="meta">Загрузка...</span>
-          <span class="dot-sep">·</span>
-          <a class="creator-link" id="creatorLink" href="https://t.me/cryforsex" target="_blank" rel="noopener noreferrer">
+          <a class="creator-chip" id="creatorLink" href="https://t.me/cryforsex" target="_blank" rel="noopener noreferrer">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.94 4.66a1.5 1.5 0 0 0-1.64-.28L2.93 11.45a1.42 1.42 0 0 0 .09 2.67l4.46 1.52 1.72 5.28a1.3 1.3 0 0 0 2.18.5l2.58-2.49 4.56 3.35a1.52 1.52 0 0 0 2.38-.93l2.44-15.17a1.5 1.5 0 0 0-1.4-1.52Zm-3.2 3.19-8.18 7.39a.75.75 0 0 0-.23.43l-.55 2.77-.98-3.02a.75.75 0 0 1 .27-.84l9.38-6.97a.25.25 0 0 1 .29.24Z"/></svg>
-            <span>@cryforsex</span>
+            <span>creator: <b>@cryforsex</b></span>
           </a>
         </div>
       </div>
@@ -722,17 +751,17 @@
       <button class="install-close" id="installClose" type="button" aria-label="Закрыть">✕</button>
     </div>
 
-    <!-- Показывается только когда реально загружено 2+ дня -->
-    <div class="day-pills" id="daySwitcher" style="display:none"></div>
+    <!-- Переключатель Сегодня / Завтра -->
+    <div class="day-pills" id="daySwitcher"></div>
 
-    <!-- Режимы -->
+    <!-- Вкладки разделов -->
     <nav class="seg-tabs">
       <button class="seg-tab active" id="tabClass" type="button">Уроки</button>
       <button class="seg-tab" id="tabTeacher" type="button">Учителя</button>
-      <button class="seg-tab" id="tabBells" type="button">Звонки</button>
+      <button class="seg-tab" id="tabRooms" type="button">Кабинеты</button>
     </nav>
 
-    <!-- Компактная панель класса (в режиме Уроки) -->
+    <!-- Панель класса (в режиме Уроки) -->
     <div id="classControls">
       <div class="toolbar">
         <div class="toolbar-left">
@@ -742,16 +771,10 @@
           </button>
           <span class="summary-text" id="classSummary"></span>
         </div>
-        <div class="toolbar-right">
-          <div class="sg-filter" id="sgFilter" style="display:none">
-            <button class="sg-btn active" type="button" data-sg="all">Все</button>
-            <button class="sg-btn" type="button" data-sg="1">1 гр</button>
-            <button class="sg-btn" type="button" data-sg="2">2 гр</button>
-          </div>
-          <button class="share-icon-btn" id="shareBtn" type="button" title="Поделиться расписанием">
-            <svg viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-          </button>
-        </div>
+        <button class="share-btn" id="shareBtn" type="button">
+          <svg viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          <span>Поделиться</span>
+        </button>
       </div>
 
       <div class="drawer" id="classDrawer">
@@ -761,12 +784,33 @@
     </div>
 
     <!-- Поиск учителя (в режиме Учителя) -->
-    <div class="teacher-box" id="teacherPanel" style="display:none">
+    <div class="filter-box" id="teacherPanel" style="display:none">
       <div class="search-wrap">
         <input class="search-input" id="teacherInput" type="search" autocomplete="off" placeholder="Поиск по фамилии учителя..." />
         <button class="clear-btn" id="clearTeacherBtn" type="button">✕</button>
       </div>
-      <div class="teacher-scroll" id="teacherChips"></div>
+      <div class="horiz-scroll" id="teacherChips"></div>
+    </div>
+
+    <!-- Панель Кабинетов (Свободные кабинеты + Занятость по номеру) -->
+    <div class="filter-box" id="roomsPanel" style="display:none">
+      <div class="rooms-mode-switch">
+        <button class="rooms-mode-btn active" id="rmFreeBtn" type="button">Свободные на уроке</button>
+        <button class="rooms-mode-btn" id="rmBusyBtn" type="button">По номеру кабинета</button>
+      </div>
+
+      <div class="free-controls" id="freeRoomsControls">
+        <div class="horiz-scroll" id="freeLessonChips"></div>
+        <div class="horiz-scroll" id="freeCorpChips"></div>
+      </div>
+
+      <div id="busyRoomControls" style="display:none">
+        <div class="search-wrap">
+          <input class="search-input" id="roomInput" type="search" autocomplete="off" placeholder="Номер кабинета (например: 220, Б.304)..." />
+          <button class="clear-btn" id="clearRoomBtn" type="button">✕</button>
+        </div>
+        <div class="horiz-scroll" id="roomChips"></div>
+      </div>
     </div>
 
     <!-- Живой таймер текущего урока / перемены -->
@@ -816,6 +860,7 @@
     const MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
     const FULL_WD = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
     const SHORT_WD = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+    const WAITING_TOMORROW_KEY = '__waiting_tomorrow__';
 
     const isTgWebApp = Boolean(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
 
@@ -851,7 +896,7 @@
 
     if ('serviceWorker' in navigator && !isTgWebApp) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=4').catch(() => {});
+        navigator.serviceWorker.register('./sw.js?v=5').catch(() => {});
       });
     }
 
@@ -868,12 +913,11 @@
       themeBtn: document.getElementById('themeBtn'),
       tabClass: document.getElementById('tabClass'),
       tabTeacher: document.getElementById('tabTeacher'),
-      tabBells: document.getElementById('tabBells'),
+      tabRooms: document.getElementById('tabRooms'),
       classControls: document.getElementById('classControls'),
       pickerTrigger: document.getElementById('pickerTrigger'),
       currentClassLabel: document.getElementById('currentClassLabel'),
       classSummary: document.getElementById('classSummary'),
-      sgFilter: document.getElementById('sgFilter'),
       classDrawer: document.getElementById('classDrawer'),
       gradeRow: document.getElementById('gradeRow'),
       classGrid: document.getElementById('classGrid'),
@@ -881,6 +925,16 @@
       teacherInput: document.getElementById('teacherInput'),
       clearTeacherBtn: document.getElementById('clearTeacherBtn'),
       teacherChips: document.getElementById('teacherChips'),
+      roomsPanel: document.getElementById('roomsPanel'),
+      rmFreeBtn: document.getElementById('rmFreeBtn'),
+      rmBusyBtn: document.getElementById('rmBusyBtn'),
+      freeRoomsControls: document.getElementById('freeRoomsControls'),
+      freeLessonChips: document.getElementById('freeLessonChips'),
+      freeCorpChips: document.getElementById('freeCorpChips'),
+      busyRoomControls: document.getElementById('busyRoomControls'),
+      roomInput: document.getElementById('roomInput'),
+      clearRoomBtn: document.getElementById('clearRoomBtn'),
+      roomChips: document.getElementById('roomChips'),
       liveBar: document.getElementById('liveBar'),
       liveLeft: document.getElementById('liveLeft'),
       liveRight: document.getElementById('liveRight'),
@@ -892,18 +946,23 @@
     let RAW_JSON = null;
     let DAYS_MAP = {};
     let DAY_KEYS = [];
+    let ALL_KNOWN_ROOMS = [];
     let selectedDayKey = '';
     let DATA = null;
     let ALL_TEACHERS = [];
-    let mode = 'class';
-    let bellsTabDay = null;
+    let ALL_ROOMS = [];
+    let mode = 'class'; // 'class' | 'teacher' | 'rooms'
+    let roomsSubMode = 'free'; // 'free' | 'busy'
+    let freeLessonNum = null;
+    let freeBuilding = 'all'; // 'all' | 'А' | 'Б' | 'В'
+    let currentRoom = '';
     const hasSavedClassInitially = Boolean(localStorage.getItem('selected_class'));
     let drawerOpen = !hasSavedClassInitially;
     let currentGrade = localStorage.getItem('saved_grade') || '5';
     let currentClass = localStorage.getItem('selected_class') || '5 А';
-    let currentSubgroup = localStorage.getItem('saved_subgroup') || 'all';
     let currentTeacher = localStorage.getItem('selected_teacher') || '';
     let deferredInstallPrompt = null;
+    let lastFetchTime = 0;
 
     const ua = navigator.userAgent || '';
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -936,14 +995,10 @@
         `;
       }
       if (isIos) {
-        return `
-          <b>Установка на iPhone:</b> нажми <b>«Поделиться» (⬆️)</b> внизу Safari → <b>«На экран „Домой“» → «Добавить»</b>.
-        `;
+        return `<b>Установка на iPhone:</b> нажми <b>«Поделиться» (⬆️)</b> внизу Safari → <b>«На экран „Домой“» → «Добавить»</b>.`;
       }
       if (isAndroid) {
-        return `
-          <b>Установка на Android:</b> открой меню браузера <b>⋮</b> и выбери <b>«Установить приложение»</b> (или «Добавить на гл. экран»).
-        `;
+        return `<b>Установка на Android:</b> открой меню браузера <b>⋮</b> и выбери <b>«Установить приложение»</b> (или «Добавить на гл. экран»).`;
       }
       if (isDesktopFirefox) {
         return `
@@ -1008,6 +1063,11 @@
       return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
     }
 
+    function formatDateObj(dt) {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${pad(dt.getDate())}.${pad(dt.getMonth() + 1)}.${dt.getFullYear()}`;
+    }
+
     function formatDdMm(dateStr) {
       const m = String(dateStr || '').match(/(\d{1,2})[._-](\d{1,2})[._-](\d{4})/);
       return m ? `${m[1].padStart(2, '0')}.${m[2].padStart(2, '0')}` : dateStr;
@@ -1042,12 +1102,16 @@
       const map = {};
       parts.forEach(p => { map[p.type] = p.value; });
       const todayDt = new Date(Number(map.year), Number(map.month) - 1, Number(map.day));
-      const tmrDt = new Date(todayDt);
-      tmrDt.setDate(tmrDt.getDate() + 1);
-      const pad = (n) => String(n).padStart(2, '0');
+      const nextDt = new Date(todayDt);
+      nextDt.setDate(nextDt.getDate() + 1);
+      // Если завтра воскресенье — следующий учебный день понедельник
+      if (nextDt.getDay() === 0) {
+        nextDt.setDate(nextDt.getDate() + 1);
+      }
       return {
-        dateStr: `${map.day}.${map.month}.${map.year}`,
-        tomorrowStr: `${pad(tmrDt.getDate())}.${pad(tmrDt.getMonth() + 1)}.${tmrDt.getFullYear()}`,
+        dateStr: formatDateObj(todayDt),
+        nextStudyDateStr: formatDateObj(nextDt),
+        isNextTomorrow: (nextDt.getTime() - todayDt.getTime()) <= 86400000 * 1.2,
         todayTs: todayDt.getTime(),
         minutes: Number(map.hour) * 60 + Number(map.minute)
       };
@@ -1069,12 +1133,43 @@
       return DAY_KEYS[DAY_KEYS.length - 1];
     }
 
+    function collectRooms(classesObj) {
+      const set = new Set();
+      Object.values(classesObj || {}).forEach(lessons => {
+        (lessons || []).forEach(l => {
+          if (Array.isArray(l.subgroups)) {
+            l.subgroups.forEach(sg => {
+              const r = (sg.room || '').trim();
+              if (r && r.toUpperCase() !== 'ДИСТ') set.add(r);
+            });
+          } else {
+            const r = (l.room || '').trim();
+            if (r && r.toUpperCase() !== 'ДИСТ') set.add(r);
+          }
+        });
+      });
+      return Array.from(set).sort((a, b) => a.localeCompare(b, 'ru', { numeric: true }));
+    }
+
     function applySelectedDay(key) {
-      if (!DAYS_MAP[key]) return;
       selectedDayKey = key;
+      const msk = getMskNow();
+
+      if (key === WAITING_TOMORROW_KEY) {
+        DATA = null;
+        els.title.textContent = formatHumanTitle(msk.nextStudyDateStr, '');
+        const updTime = (RAW_JSON && RAW_JSON.updated_at) || '';
+        els.meta.textContent = formatShortUpdated(updTime);
+        renderDaySwitcher();
+        renderWaitingTomorrow();
+        return;
+      }
+
+      if (!DAYS_MAP[key]) return;
       DATA = DAYS_MAP[key];
       ALL_TEACHERS = collectTeachers(DATA.classes);
-      bellsTabDay = isScheduleMonday() ? 'monday' : 'regular';
+      ALL_ROOMS = ALL_KNOWN_ROOMS.length ? ALL_KNOWN_ROOMS : collectRooms(DATA.classes);
+      freeLessonNum = null;
 
       const dateVal = (DATA.meta && DATA.meta.date) || key;
       const wdVal = DATA.meta && DATA.meta.weekday;
@@ -1088,16 +1183,16 @@
       renderCurrentView();
     }
 
-    // Показываем переключатель ТОЛЬКО если реально есть 2 или больше дней (без пустых кнопок-заглушек)
+    // Всегда выводим удобное переключение Сегодня / Завтра
     function renderDaySwitcher() {
-      if (DAY_KEYS.length < 2) {
+      if (!DAY_KEYS.length) {
         els.daySwitcher.style.display = 'none';
         return;
       }
       els.daySwitcher.style.display = 'flex';
       const msk = getMskNow();
 
-      els.daySwitcher.innerHTML = DAY_KEYS.map(key => {
+      const items = DAY_KEYS.map(key => {
         const dt = parseDateKey(key);
         const wdShort = dt ? SHORT_WD[dt.getDay()] : '';
         let label = `${formatDdMm(key)} (${wdShort})`;
@@ -1105,7 +1200,7 @@
 
         if (key === msk.dateStr) {
           label = `Сегодня, ${formatDdMm(key)}`;
-        } else if (key === msk.tomorrowStr) {
+        } else if (key === msk.nextStudyDateStr && msk.isNextTomorrow) {
           label = `Завтра, ${formatDdMm(key)}`;
           isFuture = true;
         } else if (dt && dt.getTime() > msk.todayTs) {
@@ -1116,10 +1211,70 @@
         return `
           <button type="button" class="day-pill ${key === selectedDayKey ? 'active' : ''}" data-daykey="${escapeHtml(key)}">
             <span>${escapeHtml(label)}</span>
-            ${isFuture ? '<span class="new-dot" title="Новое расписание"></span>' : ''}
+            ${isFuture ? '<span class="new-dot" title="Опубликовано"></span>' : ''}
           </button>
         `;
-      }).join('');
+      });
+
+      // Если будущего дня ещё нет в schedule.json — добавляем вкладку «Завтра» (или «На Пн»)
+      const hasFutureDay = DAY_KEYS.some(k => {
+        const dt = parseDateKey(k);
+        return dt && dt.getTime() > msk.todayTs;
+      });
+
+      if (!hasFutureDay) {
+        const nextDt = parseDateKey(msk.nextStudyDateStr);
+        const wdShort = nextDt ? SHORT_WD[nextDt.getDay()] : '';
+        const nextLabel = msk.isNextTomorrow
+          ? `Завтра, ${formatDdMm(msk.nextStudyDateStr)}`
+          : `На ${wdShort}, ${formatDdMm(msk.nextStudyDateStr)}`;
+
+        items.push(`
+          <button type="button" class="day-pill ${selectedDayKey === WAITING_TOMORROW_KEY ? 'active' : ''}" data-daykey="${WAITING_TOMORROW_KEY}">
+            <span>${escapeHtml(nextLabel)}</span>
+            <span class="wait-tag">ждём</span>
+          </button>
+        `);
+      }
+
+      els.daySwitcher.innerHTML = items.join('');
+    }
+
+    function renderWaitingTomorrow() {
+      els.classControls.style.display = 'none';
+      els.teacherPanel.style.display = 'none';
+      els.roomsPanel.style.display = 'none';
+      els.liveBar.style.display = 'none';
+
+      const msk = getMskNow();
+      const humanNext = formatHumanTitle(msk.nextStudyDateStr, '').toLowerCase();
+
+      els.list.innerHTML = `
+        <div class="waiting-card">
+          <div class="waiting-title">Расписание на ${escapeHtml(humanNext)} ещё не выложили</div>
+          <div class="waiting-sub">
+            Бот автоматически проверяет группу в MAX каждые 30 минут. Как только школа опубликует новый PDF-файл, расписание сразу появится в этой вкладке (без удаления сегодняшнего дня).
+          </div>
+          <div class="waiting-actions">
+            <button type="button" class="action-pill" id="refreshScheduleBtn">Проверить обновление</button>
+            ${DAY_KEYS.length ? `<button type="button" class="action-pill secondary" id="backTodayBtn">Вернуться к текущему</button>` : ''}
+          </div>
+        </div>
+      `;
+
+      const refBtn = document.getElementById('refreshScheduleBtn');
+      if (refBtn) {
+        refBtn.addEventListener('click', () => {
+          refBtn.textContent = 'Проверяем...';
+          loadScheduleData(true);
+        });
+      }
+      const backBtn = document.getElementById('backTodayBtn');
+      if (backBtn) {
+        backBtn.addEventListener('click', () => {
+          applySelectedDay(DAY_KEYS[DAY_KEYS.length - 1]);
+        });
+      }
     }
 
     els.daySwitcher.addEventListener('click', (e) => {
@@ -1137,14 +1292,6 @@
 
     els.pickerTrigger.addEventListener('click', () => {
       setDrawerState(!drawerOpen);
-    });
-
-    els.sgFilter.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-sg]');
-      if (!btn) return;
-      currentSubgroup = btn.getAttribute('data-sg');
-      localStorage.setItem('saved_subgroup', currentSubgroup);
-      renderClassUI();
     });
 
     function isScheduleMonday() {
@@ -1189,7 +1336,7 @@
         .replace(/"/g, '&quot;');
     }
 
-    function roomBadge(room) {
+    function roomBadge(room, clickable = true) {
       if (!room) return '';
       const r = room.trim();
       const up = r.toUpperCase();
@@ -1199,7 +1346,18 @@
       let cls = '';
       if (up.startsWith('Б.') || up.startsWith('B.')) cls = 'corp-b';
       else if (up.startsWith('В.')) cls = 'corp-v';
+      if (clickable) {
+        return `<button type="button" class="room ${cls}" data-jump-room="${escapeHtml(r)}" title="Открыть расписание кабинета ${escapeHtml(r)}">${escapeHtml(r)}</button>`;
+      }
       return `<span class="room ${cls}">${escapeHtml(r)}</span>`;
+    }
+
+    function getRoomBuilding(room) {
+      const up = (room || '').trim().toUpperCase();
+      if (up.startsWith('А.') || up.startsWith('A.')) return 'А';
+      if (up.startsWith('Б.') || up.startsWith('B.')) return 'Б';
+      if (up.startsWith('В.')) return 'В';
+      return 'other';
     }
 
     function getGrade(clsName) {
@@ -1233,7 +1391,6 @@
       `;
     }
 
-    // Живая плашка показывается ТОЛЬКО когда реально идут уроки или за 45 мин до начала (ноль визуального шума ночью и вечером)
     function updateLiveBar(lessons) {
       if (!isScheduleToday() || !lessons || !lessons.length) {
         els.liveBar.style.display = 'none';
@@ -1297,18 +1454,29 @@
 
     function setMode(nextMode) {
       mode = nextMode;
-      els.classControls.style.display = mode === 'class' ? 'block' : 'none';
-      els.teacherPanel.style.display = mode === 'teacher' ? 'block' : 'none';
       els.tabClass.classList.toggle('active', mode === 'class');
       els.tabTeacher.classList.toggle('active', mode === 'teacher');
-      els.tabBells.classList.toggle('active', mode === 'bells');
+      els.tabRooms.classList.toggle('active', mode === 'rooms');
+
+      if (selectedDayKey === WAITING_TOMORROW_KEY) {
+        renderWaitingTomorrow();
+        return;
+      }
       renderCurrentView();
     }
 
     function renderCurrentView() {
+      if (selectedDayKey === WAITING_TOMORROW_KEY) {
+        renderWaitingTomorrow();
+        return;
+      }
+      els.classControls.style.display = mode === 'class' ? 'block' : 'none';
+      els.teacherPanel.style.display = mode === 'teacher' ? 'block' : 'none';
+      els.roomsPanel.style.display = mode === 'rooms' ? 'block' : 'none';
+
       if (mode === 'class') renderClassUI();
       else if (mode === 'teacher') renderTeacherUI();
-      else renderBellsUI();
+      else renderRoomsUI();
     }
 
     function pluralLessons(n) {
@@ -1357,12 +1525,6 @@
         els.classSummary.textContent = 'нет уроков';
       }
 
-      const hasSubgroups = lessons.some(l => Array.isArray(l.subgroups) && l.subgroups.length > 0);
-      els.sgFilter.style.display = hasSubgroups ? 'inline-flex' : 'none';
-      els.sgFilter.querySelectorAll('[data-sg]').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-sg') === currentSubgroup);
-      });
-
       updateLiveBar(lessons);
 
       if (!lessons.length) {
@@ -1399,53 +1561,25 @@
         const progHtml = isNow ? `<div class="lesson-progress" style="width:${pct}%"></div>` : '';
 
         if (Array.isArray(l.subgroups) && l.subgroups.length) {
-          if (currentSubgroup !== 'all') {
-            const chosenSg = l.subgroups.find(sg => String(sg.group) === currentSubgroup);
-            if (chosenSg) {
-              blocks.push(`
-                <div class="lesson-card ${stateCls}">
-                  ${numColHtml(bellsMap, num)}
-                  <div class="body-col">
-                    <div class="row-main">
-                      <div class="subj">${escapeHtml(chosenSg.subject || 'Урок')}<span class="sg-inline-tag">${escapeHtml(chosenSg.group)} гр</span></div>
-                      ${roomBadge(chosenSg.room)}
-                    </div>
-                    ${chosenSg.teacher ? `<button type="button" class="teacher-btn" data-jump-teacher="${escapeHtml(chosenSg.teacher)}">${escapeHtml(chosenSg.teacher)}</button>` : ''}
-                  </div>
-                  ${progHtml}
-                </div>
-              `);
-            } else {
-              blocks.push(`
-                <div class="lesson-card is-past">
-                  ${numColHtml(bellsMap, num)}
-                  <div class="body-col">
-                    <div class="subj" style="color:var(--muted);font-weight:600">Нет урока у ${escapeHtml(currentSubgroup)} подгруппы</div>
-                  </div>
-                </div>
-              `);
-            }
-          } else {
-            blocks.push(`
-              <div class="lesson-card ${stateCls}">
-                ${numColHtml(bellsMap, num)}
-                <div class="body-col">
-                  <div class="sg-split">
-                    ${l.subgroups.map(sg => `
-                      <div class="sg-row">
-                        <div>
-                          <div class="subj"><span class="sg-num-pill">${escapeHtml(sg.group)} гр</span>${escapeHtml(sg.subject || 'Урок')}</div>
-                          ${sg.teacher ? `<button type="button" class="teacher-btn" data-jump-teacher="${escapeHtml(sg.teacher)}">${escapeHtml(sg.teacher)}</button>` : ''}
-                        </div>
-                        ${roomBadge(sg.room)}
+          blocks.push(`
+            <div class="lesson-card ${stateCls}">
+              ${numColHtml(bellsMap, num)}
+              <div class="body-col">
+                <div class="sg-split">
+                  ${l.subgroups.map(sg => `
+                    <div class="sg-row">
+                      <div>
+                        <div class="subj"><span class="sg-num-pill">${escapeHtml(sg.group)} гр</span>${escapeHtml(sg.subject || 'Урок')}</div>
+                        ${sg.teacher ? `<button type="button" class="teacher-btn" data-jump-teacher="${escapeHtml(sg.teacher)}">${escapeHtml(sg.teacher)}</button>` : ''}
                       </div>
-                    `).join('')}
-                  </div>
+                      ${roomBadge(sg.room)}
+                    </div>
+                  `).join('')}
                 </div>
-                ${progHtml}
               </div>
-            `);
-          }
+              ${progHtml}
+            </div>
+          `);
         } else {
           blocks.push(`
             <div class="lesson-card ${stateCls}">
@@ -1478,7 +1612,7 @@
       }
 
       els.teacherChips.innerHTML = filteredTeachers.map(t =>
-        `<button type="button" class="teacher-chip ${t === currentTeacher ? 'active' : ''}" data-teacher="${escapeHtml(t)}">${escapeHtml(t)}</button>`
+        `<button type="button" class="chip-btn ${t === currentTeacher ? 'active' : ''}" data-teacher="${escapeHtml(t)}">${escapeHtml(t)}</button>`
       ).join('');
 
       const targetExact = filteredTeachers.includes(currentTeacher) ? currentTeacher : '';
@@ -1556,38 +1690,185 @@
       els.list.innerHTML = `<div class="lessons-stack">${blocks.join('')}</div>`;
     }
 
-    function renderBellsUI() {
+    // Раздел Кабинеты: Свободные кабинеты на уроке + Занятость конкретного кабинета на весь день
+    function renderRoomsUI() {
+      if (!DATA || !DATA.classes) return;
       els.liveBar.style.display = 'none';
-      if (!bellsTabDay) {
-        bellsTabDay = isScheduleMonday() ? 'monday' : 'regular';
-      }
-      const chosenMap = bellsTabDay === 'monday' ? BELLS_MONDAY : BELLS_REGULAR;
-      const curMin = getMskNow().minutes;
-      const highlightToday = isScheduleToday() && ((bellsTabDay === 'monday') === isScheduleMonday());
 
-      const switchHtml = `
-        <div class="bells-switch">
-          <button type="button" class="bells-switch-btn ${bellsTabDay === 'monday' ? 'active' : ''}" data-bday="monday">Понедельник (1 ур. — 30 мин)</button>
-          <button type="button" class="bells-switch-btn ${bellsTabDay === 'regular' ? 'active' : ''}" data-bday="regular">Вт – Пт (все по 40 мин)</button>
-        </div>
-      `;
+      els.rmFreeBtn.classList.toggle('active', roomsSubMode === 'free');
+      els.rmBusyBtn.classList.toggle('active', roomsSubMode === 'busy');
+      els.freeRoomsControls.style.display = roomsSubMode === 'free' ? 'flex' : 'none';
+      els.busyRoomControls.style.display = roomsSubMode === 'busy' ? 'block' : 'none';
 
-      const rows = Object.entries(chosenMap).map(([numStr, b]) => {
-        const n = Number(numStr);
-        const isNow = highlightToday && curMin >= toMin(b.start) && curMin < toMin(b.end);
-        const brk = getBreakMinutes(chosenMap, n, n + 1);
-        const isBig = brk >= 20;
-        const brkLabel = brk > 0 ? `${brk} мин` : '—';
-        return `
-          <div class="bells-row ${isNow ? 'is-now' : ''}">
-            <div class="bells-num">${n} урок</div>
-            <div class="bells-time">${b.start} – ${b.end}</div>
-            <div class="bells-brk ${isBig ? 'big' : ''}">${brk > 0 ? 'пер. ' + brkLabel : brkLabel}</div>
+      const bellsMap = getActiveBells();
+
+      if (roomsSubMode === 'free') {
+        // Определяем список уроков дня (1..12)
+        let maxLesson = 8;
+        Object.values(DATA.classes).forEach(lessons => {
+          (lessons || []).forEach(l => {
+            const n = Number(l.lesson || l.num || 0);
+            if (n > maxLesson) maxLesson = n;
+          });
+        });
+
+        if (!freeLessonNum) {
+          // Если сейчас идёт урок или перемена — выбираем его по умолчанию
+          const curMin = getMskNow().minutes;
+          freeLessonNum = 1;
+          if (isScheduleToday()) {
+            for (let n = 1; n <= maxLesson; n++) {
+              const b = bellsMap[n];
+              if (b && curMin < toMin(b.end)) {
+                freeLessonNum = n;
+                break;
+              }
+            }
+          }
+        }
+
+        const lessonBtns = [];
+        for (let n = 1; n <= maxLesson; n++) {
+          const b = bellsMap[n];
+          const timeHint = b ? ` · ${b.start}` : '';
+          lessonBtns.push(`
+            <button type="button" class="chip-btn ${n === freeLessonNum ? 'active' : ''}" data-freelesson="${n}">
+              ${n} урок${timeHint}
+            </button>
+          `);
+        }
+        els.freeLessonChips.innerHTML = lessonBtns.join('');
+
+        const corps = [
+          { id: 'all', label: 'Все корпуса' },
+          { id: 'А', label: 'Корпус А' },
+          { id: 'Б', label: 'Корпус Б' },
+          { id: 'В', label: 'Корпус В' }
+        ];
+        els.freeCorpChips.innerHTML = corps.map(c =>
+          `<button type="button" class="chip-btn ${freeBuilding === c.id ? 'active' : ''}" data-freecorp="${c.id}">${c.label}</button>`
+        ).join('');
+
+        // Находим занятые кабинеты на выбранном уроке
+        const busySet = new Set();
+        Object.values(DATA.classes).forEach(lessons => {
+          (lessons || []).forEach(l => {
+            const n = Number(l.lesson || l.num || 0);
+            if (n !== freeLessonNum) return;
+            if (Array.isArray(l.subgroups)) {
+              l.subgroups.forEach(sg => {
+                if (sg.room) busySet.add(sg.room.trim());
+              });
+            } else if (l.room) {
+              busySet.add(l.room.trim());
+            }
+          });
+        });
+
+        const freeRooms = ALL_ROOMS.filter(r => {
+          if (busySet.has(r)) return false;
+          if (freeBuilding !== 'all' && getRoomBuilding(r) !== freeBuilding) return false;
+          return true;
+        });
+
+        const bInfo = bellsMap[freeLessonNum];
+        const spanLabel = bInfo ? `${bInfo.start}–${bInfo.end}` : '';
+
+        if (!freeRooms.length) {
+          els.list.innerHTML = `<div class="empty-state">Свободных кабинетов на ${freeLessonNum} уроке не найдено</div>`;
+          return;
+        }
+
+        els.list.innerHTML = `
+          <div class="free-rooms-card">
+            <div class="free-rooms-title">
+              <span>Свободны на ${freeLessonNum} уроке (${freeRooms.length})</span>
+              <span>${spanLabel}</span>
+            </div>
+            <div class="free-rooms-grid">
+              ${freeRooms.map(r => roomBadge(r, true)).join('')}
+            </div>
           </div>
         `;
-      }).join('');
+        return;
+      }
 
-      els.list.innerHTML = `${switchHtml}<div class="bells-card">${rows}</div>`;
+      // Режим занятости конкретного кабинета по номеру
+      const rawQ = els.roomInput.value;
+      els.clearRoomBtn.style.display = rawQ ? 'block' : 'none';
+      const q = normStr(rawQ);
+      const filteredRooms = ALL_ROOMS.filter(r => !q || normStr(r).includes(q));
+
+      if ((!currentRoom || !filteredRooms.includes(currentRoom)) && filteredRooms.length) {
+        currentRoom = filteredRooms[0];
+      }
+
+      els.roomChips.innerHTML = filteredRooms.map(r =>
+        `<button type="button" class="chip-btn ${r === currentRoom ? 'active' : ''}" data-room="${escapeHtml(r)}">${escapeHtml(r)}</button>`
+      ).join('');
+
+      const targetRoom = filteredRooms.includes(currentRoom) ? currentRoom : '';
+      if (!targetRoom) {
+        els.list.innerHTML = '<div class="empty-state">Кабинет не найден</div>';
+        return;
+      }
+
+      const hits = [];
+      Object.entries(DATA.classes).forEach(([cls, lessons]) => {
+        (lessons || []).forEach(l => {
+          const num = Number(l.lesson || l.num || 0);
+          if (Array.isArray(l.subgroups)) {
+            l.subgroups.forEach(sg => {
+              if ((sg.room || '').trim() === targetRoom) {
+                hits.push({ num, cls: `${cls} (${sg.group} гр)`, subject: sg.subject, teacher: sg.teacher, room: targetRoom });
+              }
+            });
+          } else if ((l.room || '').trim() === targetRoom) {
+            hits.push({ num, cls, subject: l.subject || l.text, teacher: l.teacher, room: targetRoom });
+          }
+        });
+      });
+
+      hits.sort((a, b) => a.num - b.num || a.cls.localeCompare(b.cls, 'ru'));
+
+      if (!hits.length) {
+        els.list.innerHTML = `<div class="empty-state">Кабинет ${escapeHtml(targetRoom)} сегодня полностью свободен</div>`;
+        return;
+      }
+
+      const todayMode = isScheduleToday();
+      const curMin = getMskNow().minutes;
+      const blocks = [];
+
+      hits.forEach((h, idx) => {
+        const b = bellsMap[h.num];
+        const sMin = b ? toMin(b.start) : -1;
+        const eMin = b ? toMin(b.end) : -1;
+        const isNow = todayMode && sMin >= 0 && curMin >= sMin && curMin < eMin;
+        const isPast = todayMode && eMin >= 0 && curMin >= eMin;
+
+        if (idx > 0 && h.num > hits[idx - 1].num + 1) {
+          const freeFrom = hits[idx - 1].num + 1;
+          const freeTo = h.num - 1;
+          const freeTxt = freeFrom === freeTo ? `${freeFrom} урок` : `${freeFrom}–${freeTo} уроки`;
+          blocks.push(`<div class="divider-note">Кабинет свободен (${freeTxt})</div>`);
+        }
+
+        blocks.push(`
+          <div class="lesson-card ${isNow ? 'is-now' : (isPast ? 'is-past' : '')}">
+            ${numColHtml(bellsMap, h.num)}
+            <div class="body-col">
+              <div class="row-main">
+                <div class="subj">${escapeHtml(h.cls)} · ${escapeHtml(h.subject || '')}</div>
+                ${roomBadge(h.room, false)}
+              </div>
+              ${h.teacher ? `<button type="button" class="teacher-btn" data-jump-teacher="${escapeHtml(h.teacher)}">${escapeHtml(h.teacher)}</button>` : ''}
+            </div>
+          </div>
+        `);
+      });
+
+      els.list.innerHTML = `<div class="lessons-stack">${blocks.join('')}</div>`;
     }
 
     function buildShareText() {
@@ -1596,22 +1877,16 @@
       const dateStr = (DATA.meta && DATA.meta.date) ? DATA.meta.date : '';
       const wd = (DATA.meta && DATA.meta.weekday) ? ` (${DATA.meta.weekday})` : '';
       const lessons = DATA.classes[currentClass] || [];
-      const sgSuffix = currentSubgroup !== 'all' ? ` (${currentSubgroup} гр)` : '';
-      const lines = [`Расписание ${currentClass}${sgSuffix} на ${dateStr}${wd}:`];
+      const lines = [`Расписание ${currentClass} на ${dateStr}${wd}:`];
 
       lessons.forEach(l => {
         const n = l.lesson || l.num;
         const t = bellsMap[n] ? ` ${bellsMap[n].start}–${bellsMap[n].end}` : '';
         if (Array.isArray(l.subgroups)) {
-          if (currentSubgroup !== 'all') {
-            const sg = l.subgroups.find(x => String(x.group) === currentSubgroup);
-            if (sg) lines.push(`${n}.${t} ${sg.subject} [${sg.room || '—'}]`);
-          } else {
-            lines.push(`${n}.${t}:`);
-            l.subgroups.forEach(sg => {
-              lines.push(`  • ${sg.group} гр: ${sg.subject} [${sg.room || '—'}]`);
-            });
-          }
+          lines.push(`${n}.${t}:`);
+          l.subgroups.forEach(sg => {
+            lines.push(`  • ${sg.group} гр: ${sg.subject} [${sg.room || '—'}]`);
+          });
         } else {
           lines.push(`${n}.${t} ${l.subject || l.text} [${l.room || '—'}]`);
         }
@@ -1644,22 +1919,66 @@
 
     els.tabClass.addEventListener('click', () => setMode('class'));
     els.tabTeacher.addEventListener('click', () => setMode('teacher'));
-    els.tabBells.addEventListener('click', () => setMode('bells'));
+    els.tabRooms.addEventListener('click', () => setMode('rooms'));
 
-    // Клик по учителю прямо из карточки урока + переключение дня в Звонках
+    els.rmFreeBtn.addEventListener('click', () => {
+      roomsSubMode = 'free';
+      renderRoomsUI();
+    });
+    els.rmBusyBtn.addEventListener('click', () => {
+      roomsSubMode = 'busy';
+      renderRoomsUI();
+    });
+
+    els.freeLessonChips.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-freelesson]');
+      if (!btn) return;
+      freeLessonNum = Number(btn.getAttribute('data-freelesson'));
+      renderRoomsUI();
+    });
+
+    els.freeCorpChips.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-freecorp]');
+      if (!btn) return;
+      freeBuilding = btn.getAttribute('data-freecorp');
+      renderRoomsUI();
+    });
+
+    els.roomChips.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-room]');
+      if (!btn) return;
+      currentRoom = btn.getAttribute('data-room');
+      renderRoomsUI();
+    });
+
+    els.roomInput.addEventListener('input', () => {
+      currentRoom = '';
+      renderRoomsUI();
+    });
+
+    els.clearRoomBtn.addEventListener('click', () => {
+      els.roomInput.value = '';
+      currentRoom = '';
+      renderRoomsUI();
+      els.roomInput.focus();
+    });
+
+    // Быстрый переход к учителю или кабинету по клику из карточки урока
     els.list.addEventListener('click', (e) => {
-      const jumpBtn = e.target.closest('[data-jump-teacher]');
-      if (jumpBtn) {
-        currentTeacher = jumpBtn.getAttribute('data-jump-teacher');
+      const jumpTeacher = e.target.closest('[data-jump-teacher]');
+      if (jumpTeacher) {
+        currentTeacher = jumpTeacher.getAttribute('data-jump-teacher');
         localStorage.setItem('selected_teacher', currentTeacher);
         els.teacherInput.value = '';
         setMode('teacher');
         return;
       }
-      const bBtn = e.target.closest('[data-bday]');
-      if (bBtn) {
-        bellsTabDay = bBtn.getAttribute('data-bday');
-        renderBellsUI();
+      const jumpRoom = e.target.closest('[data-jump-room]');
+      if (jumpRoom) {
+        currentRoom = jumpRoom.getAttribute('data-jump-room');
+        els.roomInput.value = '';
+        roomsSubMode = 'busy';
+        setMode('rooms');
       }
     });
 
@@ -1698,6 +2017,71 @@
       els.teacherInput.focus();
     });
 
+    function loadScheduleData(manualRefresh = false) {
+      lastFetchTime = Date.now();
+      fetch('./schedule.json?t=' + Date.now())
+        .then(r => {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(json => {
+          RAW_JSON = json;
+          DAYS_MAP = {};
+          const roomUnion = new Set();
+
+          if (json.days && typeof json.days === 'object' && Object.keys(json.days).length) {
+            Object.entries(json.days).forEach(([k, v]) => {
+              if (v && v.classes) {
+                DAYS_MAP[k] = v;
+                collectRooms(v.classes).forEach(r => roomUnion.add(r));
+              }
+            });
+          } else if (json.classes) {
+            const singleKey = (json.meta && json.meta.date) || 'current';
+            DAYS_MAP[singleKey] = json;
+            collectRooms(json.classes).forEach(r => roomUnion.add(r));
+          }
+
+          ALL_KNOWN_ROOMS = Array.from(roomUnion).sort((a, b) => a.localeCompare(b, 'ru', { numeric: true }));
+
+          DAY_KEYS = Object.keys(DAYS_MAP).sort((a, b) => {
+            const da = parseDateKey(a), db = parseDateKey(b);
+            return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
+          });
+
+          if (manualRefresh && selectedDayKey === WAITING_TOMORROW_KEY) {
+            const msk = getMskNow();
+            const futureFound = DAY_KEYS.find(k => {
+              const dt = parseDateKey(k);
+              return dt && dt.getTime() > msk.todayTs;
+            });
+            if (futureFound) {
+              applySelectedDay(futureFound);
+              showToast('Новое расписание загружено!');
+              return;
+            }
+            applySelectedDay(WAITING_TOMORROW_KEY);
+            showToast('В MAX пока нет нового файла');
+            return;
+          }
+
+          const targetKey = (selectedDayKey && DAYS_MAP[selectedDayKey]) ? selectedDayKey : pickInitialDayKey();
+          if (targetKey) {
+            applySelectedDay(targetKey);
+          }
+        })
+        .catch(err => {
+          els.meta.textContent = 'Ошибка загрузки: ' + err.message;
+        });
+    }
+
+    // Автопроверка свежего расписания при разворачивании приложения из фона
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastFetchTime > 60000) {
+        loadScheduleData(false);
+      }
+    });
+
     setInterval(() => {
       if (DATA) {
         renderDaySwitcher();
@@ -1705,36 +2089,7 @@
       }
     }, 30000);
 
-    fetch('./schedule.json?t=' + Date.now())
-      .then(r => {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-      })
-      .then(json => {
-        RAW_JSON = json;
-        DAYS_MAP = {};
-        if (json.days && typeof json.days === 'object' && Object.keys(json.days).length) {
-          Object.entries(json.days).forEach(([k, v]) => {
-            if (v && v.classes) DAYS_MAP[k] = v;
-          });
-        } else if (json.classes) {
-          const singleKey = (json.meta && json.meta.date) || 'current';
-          DAYS_MAP[singleKey] = json;
-        }
-
-        DAY_KEYS = Object.keys(DAYS_MAP).sort((a, b) => {
-          const da = parseDateKey(a), db = parseDateKey(b);
-          return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
-        });
-
-        const initialKey = pickInitialDayKey();
-        if (initialKey) {
-          applySelectedDay(initialKey);
-        }
-      })
-      .catch(err => {
-        els.meta.textContent = 'Ошибка загрузки: ' + err.message;
-      });
+    loadScheduleData(false);
   </script>
 </body>
 </html>
