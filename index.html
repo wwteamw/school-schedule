@@ -90,7 +90,7 @@
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 14px 16px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       box-shadow: var(--shadow);
     }
     .header-top {
@@ -158,6 +158,54 @@
       background: var(--accent-soft);
       border-color: var(--accent);
       color: var(--accent);
+    }
+
+    /* Переключатель учебных дней (Сегодня / Завтра) */
+    .day-switcher {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .day-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 9px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      text-align: left;
+      transition: 0.15s;
+    }
+    .day-btn:hover { border-color: var(--accent); }
+    .day-btn.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    .day-btn.waiting {
+      opacity: 0.62;
+      border-style: dashed;
+    }
+    .day-btn-main { display: flex; flex-direction: column; min-width: 0; }
+    .day-btn-label { font-size: 13px; font-weight: 800; color: var(--text); }
+    .day-btn.active .day-btn-label { color: var(--accent); }
+    .day-btn-sub { font-size: 11.5px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .day-new-pill {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: var(--now-soft);
+      color: var(--now-text);
+      border: 1px solid var(--now-border);
+      padding: 2px 6px;
+      border-radius: 999px;
+      flex-shrink: 0;
     }
 
     /* Универсальная плашка помощи по установке PWA */
@@ -615,6 +663,9 @@
       <button class="install-close" id="installClose" type="button" aria-label="Закрыть">✕</button>
     </div>
 
+    <!-- Переключатель дней (Сегодня / Завтра) -->
+    <div class="day-switcher" id="daySwitcher" style="display:none"></div>
+
     <!-- Переключатель разделов -->
     <nav class="nav-tabs">
       <button class="nav-tab active" id="tabClass" type="button">🎒 Классы</button>
@@ -690,6 +741,7 @@
       13: { start: '18:30', end: '19:10' }
     };
 
+    const SHORT_WD = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
     const isTgWebApp = Boolean(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData);
 
     if (window.Telegram && window.Telegram.WebApp) {
@@ -705,7 +757,6 @@
       document.documentElement.setAttribute('data-theme', savedTheme);
     }
 
-    // Отрисовка чёткой PNG-иконки 180×180 на лету для iPhone / Safari
     (function setupAppleTouchIcon() {
       const link = document.getElementById('appleTouchIcon');
       if (!link) return;
@@ -739,6 +790,7 @@
       installSheet: document.getElementById('installSheet'),
       installSheetBody: document.getElementById('installSheetBody'),
       installClose: document.getElementById('installClose'),
+      daySwitcher: document.getElementById('daySwitcher'),
       themeBtn: document.getElementById('themeBtn'),
       tabClass: document.getElementById('tabClass'),
       tabTeacher: document.getElementById('tabTeacher'),
@@ -761,6 +813,10 @@
       toast: document.getElementById('toast')
     };
 
+    let RAW_JSON = null;
+    let DAYS_MAP = {};
+    let DAY_KEYS = [];
+    let selectedDayKey = '';
     let DATA = null;
     let ALL_TEACHERS = [];
     let mode = 'class';
@@ -876,18 +932,153 @@
       syncThemeIcon();
     });
 
+    function parseDateKey(str) {
+      const m = String(str || '').match(/(\d{1,2})[._-](\d{1,2})[._-](\d{4})/);
+      if (!m) return null;
+      return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+    }
+
+    function formatDdMm(dateStr) {
+      const m = String(dateStr || '').match(/(\d{1,2})[._-](\d{1,2})[._-](\d{4})/);
+      return m ? `${m[1].padStart(2, '0')}.${m[2].padStart(2, '0')}` : dateStr;
+    }
+
+    function getMskNow() {
+      const now = new Date();
+      const parts = new Intl.DateTimeFormat('ru-RU', {
+        timeZone: 'Europe/Moscow',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      }).formatToParts(now);
+      const map = {};
+      parts.forEach(p => { map[p.type] = p.value; });
+      const todayDt = new Date(Number(map.year), Number(map.month) - 1, Number(map.day));
+      const tmrDt = new Date(todayDt);
+      tmrDt.setDate(tmrDt.getDate() + 1);
+      const pad = (n) => String(n).padStart(2, '0');
+      return {
+        dateStr: `${map.day}.${map.month}.${map.year}`,
+        tomorrowStr: `${pad(tmrDt.getDate())}.${pad(tmrDt.getMonth() + 1)}.${tmrDt.getFullYear()}`,
+        todayTs: todayDt.getTime(),
+        minutes: Number(map.hour) * 60 + Number(map.minute)
+      };
+    }
+
+    function pickInitialDayKey() {
+      if (!DAY_KEYS.length) return '';
+      const msk = getMskNow();
+      const hasToday = DAY_KEYS.includes(msk.dateStr);
+      // До 19:15 МСК (конец 2-й смены) по умолчанию держим открытым «Сегодня», даже если в 10:00 утра уже выложили «Завтра»!
+      if (hasToday && msk.minutes < 19 * 60 + 15) {
+        return msk.dateStr;
+      }
+      // После 19:15 МСК автоматически фокусируем будущий учебный день (Завтра / Понедельник)
+      const futureKeys = DAY_KEYS.filter(k => {
+        const dt = parseDateKey(k);
+        return dt && dt.getTime() > msk.todayTs;
+      });
+      if (futureKeys.length) return futureKeys[0];
+      if (hasToday) return msk.dateStr;
+      return DAY_KEYS[DAY_KEYS.length - 1];
+    }
+
+    function applySelectedDay(key) {
+      if (!DAYS_MAP[key]) return;
+      selectedDayKey = key;
+      DATA = DAYS_MAP[key];
+      ALL_TEACHERS = collectTeachers(DATA.classes);
+      bellsTabDay = isScheduleMonday() ? 'monday' : 'regular';
+
+      if (DATA.meta && DATA.meta.school) {
+        els.school.textContent = DATA.meta.school;
+      }
+      if (DATA.meta && DATA.meta.date) {
+        const wd = DATA.meta.weekday ? ` (${DATA.meta.weekday})` : '';
+        els.title.textContent = `На ${DATA.meta.date}${wd}`;
+      }
+      const netTag = navigator.onLine === false ? ' (офлайн-кеш)' : '';
+      const updTime = (RAW_JSON && RAW_JSON.updated_at) || DATA.updated_at || '—';
+      els.meta.textContent = `Обновлено из MAX: ${updTime}${netTag}`;
+
+      renderDaySwitcher();
+      renderCurrentView();
+    }
+
+    function renderDaySwitcher() {
+      if (!DAY_KEYS.length) {
+        els.daySwitcher.style.display = 'none';
+        return;
+      }
+      els.daySwitcher.style.display = 'grid';
+      const msk = getMskNow();
+
+      const buttonsHtml = DAY_KEYS.map(key => {
+        const entry = DAYS_MAP[key];
+        const dt = parseDateKey(key);
+        const wdShort = dt ? SHORT_WD[dt.getDay()] : ((entry.meta && entry.meta.weekday) || '');
+        let relLabel = `${formatDdMm(key)} (${wdShort})`;
+        let subText = (entry.meta && entry.meta.weekday) ? `${key}, ${entry.meta.weekday}` : key;
+        let isFutureNew = false;
+
+        if (key === msk.dateStr) {
+          relLabel = '📅 Сегодня';
+          subText = `${formatDdMm(key)} (${wdShort})`;
+        } else if (key === msk.tomorrowStr) {
+          relLabel = '⚡ Завтра';
+          subText = `${formatDdMm(key)} (${wdShort})`;
+          isFutureNew = true;
+        } else if (dt && dt.getTime() > msk.todayTs) {
+          relLabel = `⚡ На ${wdShort}`;
+          subText = key;
+          isFutureNew = true;
+        }
+
+        const activeCls = key === selectedDayKey ? 'active' : '';
+        return `
+          <button type="button" class="day-btn ${activeCls}" data-daykey="${escapeHtml(key)}">
+            <div class="day-btn-main">
+              <span class="day-btn-label">${escapeHtml(relLabel)}</span>
+              <span class="day-btn-sub">${escapeHtml(subText)}</span>
+            </div>
+            ${isFutureNew ? '<span class="day-new-pill">Новое</span>' : ''}
+          </button>
+        `;
+      });
+
+      // Если пока загружен только сегодняшний день — показываем статус ожидания завтрашнего PDF
+      if (DAY_KEYS.length === 1 && DAY_KEYS[0] === msk.dateStr) {
+        buttonsHtml.push(`
+          <button type="button" class="day-btn waiting" data-waiting="1">
+            <div class="day-btn-main">
+              <span class="day-btn-label">⏳ Завтра</span>
+              <span class="day-btn-sub">ждём PDF в MAX</span>
+            </div>
+          </button>
+        `);
+      }
+
+      els.daySwitcher.innerHTML = buttonsHtml.join('');
+    }
+
+    els.daySwitcher.addEventListener('click', (e) => {
+      const waitBtn = e.target.closest('[data-waiting]');
+      if (waitBtn) {
+        showToast('Расписание на завтра появится сразу после публикации в MAX');
+        return;
+      }
+      const btn = e.target.closest('[data-daykey]');
+      if (!btn) return;
+      applySelectedDay(btn.getAttribute('data-daykey'));
+    });
+
     function isScheduleMonday() {
       if (!DATA) return false;
       const wd = ((DATA.meta && DATA.meta.weekday) || '').toLowerCase();
       if (wd.includes('понедельник')) return true;
       if (wd && !wd.includes('понедельник')) return false;
       const dateRaw = (DATA.meta && DATA.meta.date) || DATA.source_file || '';
-      const m = dateRaw.match(/(\d{1,2})[._-](\d{1,2})[._-](\d{4})/);
-      if (m) {
-        const dt = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
-        return dt.getDay() === 1;
-      }
-      return false;
+      const dt = parseDateKey(dateRaw);
+      return dt ? dt.getDay() === 1 : false;
     }
 
     function getActiveBells() {
@@ -903,21 +1094,6 @@
     function getBreakMinutes(bellsMap, numA, numB) {
       if (numB !== numA + 1 || !bellsMap[numA] || !bellsMap[numB]) return 0;
       return Math.max(0, toMin(bellsMap[numB].start) - toMin(bellsMap[numA].end));
-    }
-
-    function getMskNow() {
-      const now = new Date();
-      const parts = new Intl.DateTimeFormat('ru-RU', {
-        timeZone: 'Europe/Moscow',
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', hour12: false
-      }).formatToParts(now);
-      const map = {};
-      parts.forEach(p => { map[p.type] = p.value; });
-      return {
-        dateStr: `${map.day}.${map.month}.${map.year}`,
-        minutes: Number(map.hour) * 60 + Number(map.minute)
-      };
     }
 
     function isScheduleToday() {
@@ -1399,7 +1575,10 @@
     });
 
     setInterval(() => {
-      if (DATA) renderCurrentView();
+      if (DATA) {
+        renderDaySwitcher();
+        renderCurrentView();
+      }
     }, 30000);
 
     fetch('./schedule.json?t=' + Date.now())
@@ -1408,19 +1587,26 @@
         return r.json();
       })
       .then(json => {
-        DATA = json;
-        ALL_TEACHERS = collectTeachers(json.classes);
-        bellsTabDay = isScheduleMonday() ? 'monday' : 'regular';
-        if (json.meta && json.meta.school) {
-          els.school.textContent = json.meta.school;
+        RAW_JSON = json;
+        DAYS_MAP = {};
+        if (json.days && typeof json.days === 'object' && Object.keys(json.days).length) {
+          Object.entries(json.days).forEach(([k, v]) => {
+            if (v && v.classes) DAYS_MAP[k] = v;
+          });
+        } else if (json.classes) {
+          const singleKey = (json.meta && json.meta.date) || 'current';
+          DAYS_MAP[singleKey] = json;
         }
-        if (json.meta && json.meta.date) {
-          const wd = json.meta.weekday ? ` (${json.meta.weekday})` : '';
-          els.title.textContent = `На ${json.meta.date}${wd}`;
+
+        DAY_KEYS = Object.keys(DAYS_MAP).sort((a, b) => {
+          const da = parseDateKey(a), db = parseDateKey(b);
+          return (da ? da.getTime() : 0) - (db ? db.getTime() : 0);
+        });
+
+        const initialKey = pickInitialDayKey();
+        if (initialKey) {
+          applySelectedDay(initialKey);
         }
-        const netTag = navigator.onLine === false ? ' (офлайн-кеш)' : '';
-        els.meta.textContent = `Обновлено из MAX: ${json.updated_at || '—'}${netTag}`;
-        renderCurrentView();
       })
       .catch(err => {
         els.meta.textContent = 'Ошибка загрузки расписания: ' + err.message;

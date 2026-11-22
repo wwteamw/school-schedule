@@ -15,6 +15,7 @@ GROUP_URL = "https://web.max.ru/-69393426093561"
 MAX_AUTH = os.environ.get("MAX_AUTH", "").strip()
 MAX_DEVICE_ID = os.environ.get("MAX_DEVICE_ID", "").strip()
 PDF_PATH = "latest.pdf"
+TEMP_PREV_PDF = "_prev_day.pdf"
 JSON_PATH = "schedule.json"
 
 ROOM_RE = re.compile(
@@ -47,8 +48,8 @@ class StringCollector(PDFConverter):
 
 
 def extract_date_tuple(filename: str) -> tuple[int, int, int]:
-    """Извлекает дату ДД.ММ.ГГГГ из имени файла для выбора самого свежего расписания."""
-    for m in re.finditer(r"(\d{1,2})[._-](\d{1,2})[._-](\d{2,4})", filename):
+    """Извлекает дату ДД.ММ.ГГГГ из строки/имени файла для сортировки по дате."""
+    for m in re.finditer(r"(\d{1,2})[._-](\d{1,2})[._-](\d{2,4})", filename or ""):
         day, month, year = int(m.group(1)), int(m.group(2)), int(m.group(3))
         if year < 100:
             year += 2000
@@ -57,9 +58,90 @@ def extract_date_tuple(filename: str) -> tuple[int, int, int]:
     return (0, 0, 0)
 
 
-def download_latest_pdf() -> str:
+def load_existing_days() -> dict:
+    """Читает уже сохранённые дни из schedule.json, чтобы расписание на сегодня не затиралось новым файлом на завтра."""
+    if not os.path.exists(JSON_PATH):
+        return {}
+    try:
+        with open(JSON_PATH, "r", encoding="utf-8") as f:
+            old = json.load(f)
+    except Exception:
+        return {}
+
+    days = {}
+    if isinstance(old.get("days"), dict):
+        for k, v in old["days"].items():
+            if isinstance(v, dict) and v.get("classes"):
+                days[k] = v
+
+    # Миграция старого однодневного формата
+    old_meta = old.get("meta") or {}
+    old_date = (old_meta.get("date") or "").strip()
+    if old_date and old.get("classes") and old_date not in days:
+        days[old_date] = {
+            "updated_at": old.get("updated_at", ""),
+            "source_file": old.get("source_file", ""),
+            "meta": old_meta,
+            "classes": old["classes"],
+        }
+    return days
+
+
+def _click_and_save_pdf(page, target_pdf, fallback_name: str, out_path: str, captured_downloads: list, captured_pdf_bytes: list) -> str:
+    captured_downloads.clear()
+    captured_pdf_bytes.clear()
+    try:
+        page.evaluate("() => { window.__capturedPdfBlobs = []; }")
+    except Exception:
+        pass
+
+    target_pdf.scroll_into_view_if_needed()
+    page.wait_for_timeout(500)
+
+    click_targets = [
+        target_pdf.locator("xpath=ancestor::*[.//button or .//a][1]//button").first,
+        target_pdf.locator("xpath=ancestor::*[.//button or .//a][1]//a").first,
+        target_pdf.locator("xpath=ancestor::*[.//svg][1]//svg").first,
+        target_pdf.locator("xpath=.."),
+        target_pdf,
+    ]
+
+    for target in click_targets:
+        try:
+            if target.count() > 0:
+                target.click(force=True, timeout=3000)
+                page.wait_for_timeout(3500)
+        except Exception:
+            continue
+
+        if captured_downloads:
+            dl = captured_downloads[-1]
+            dl.save_as(out_path)
+            return dl.suggested_filename or fallback_name
+
+        if captured_pdf_bytes:
+            with open(out_path, "wb") as f:
+                f.write(captured_pdf_bytes[-1])
+            return fallback_name
+
+        blobs = page.evaluate("() => window.__capturedPdfBlobs || []")
+        for b64_url in reversed(blobs):
+            if "," in b64_url:
+                raw_bytes = base64.b64decode(b64_url.split(",", 1)[1])
+                if raw_bytes.startswith(b"%PDF"):
+                    with open(out_path, "wb") as f:
+                        f.write(raw_bytes)
+                    return fallback_name
+
+    raise RuntimeError(f"Не удалось скачать выбранный PDF '{fallback_name}'")
+
+
+def download_recent_pdfs(existing_days: dict) -> list[tuple[str, str]]:
+    """Скачивает самый свежий PDF в latest.pdf и (при необходимости) предыдущий актуальный день."""
     if not MAX_AUTH or not MAX_DEVICE_ID:
         raise ValueError("Не заданы MAX_AUTH или MAX_DEVICE_ID в GitHub Secrets")
+
+    downloaded = []
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -125,7 +207,6 @@ def download_latest_pdf() -> str:
         except PlaywrightTimeoutError:
             page.wait_for_timeout(5000)
 
-        # Прокручиваем ленту чата в самый низ, чтобы подгрузились самые свежие посты
         for _ in range(3):
             page.evaluate(
                 """() => {
@@ -180,56 +261,48 @@ def download_latest_pdf() -> str:
 
         print("Найденные PDF в ленте:", [(c["name"], c["date"], c["y"]) for c in candidates])
 
-        # Выбираем файл с самой новой датой в названии, а при равной дате — самый нижний в ленте чата (y)
-        best = max(candidates, key=lambda c: (c["date"], c["y"], c["idx"]))
-        target_pdf = best["locator"]
-        filename = best["name"]
-        print(f"Выбран самый свежий PDF: {filename} (дата={best['date']}, y={best['y']})")
+        # Группируем по датам (для каждой даты берём самый нижний пост в чате)
+        by_date = {}
+        dated = [c for c in candidates if c["date"] != (0, 0, 0)]
+        if dated:
+            for c in dated:
+                prev = by_date.get(c["date"])
+                if not prev or (c["y"], c["idx"]) > (prev["y"], prev["idx"]):
+                    by_date[c["date"]] = c
+            top_dates = sorted(by_date.keys(), reverse=True)[:2]
+            best = by_date[top_dates[0]]
+        else:
+            top_dates = []
+            best = max(candidates, key=lambda c: (c["date"], c["y"], c["idx"]))
 
-        target_pdf.scroll_into_view_if_needed()
-        page.wait_for_timeout(500)
+        # 1. Скачиваем самый свежий файл в latest.pdf
+        print(f"Выбран самый свежий PDF: {best['name']} (дата={best['date']}, y={best['y']})")
+        latest_name = _click_and_save_pdf(
+            page, best["locator"], best["name"], PDF_PATH, captured_downloads, captured_pdf_bytes
+        )
+        downloaded.append((PDF_PATH, latest_name))
 
-        click_targets = [
-            target_pdf.locator("xpath=ancestor::*[.//button or .//a][1]//button").first,
-            target_pdf.locator("xpath=ancestor::*[.//button or .//a][1]//a").first,
-            target_pdf.locator("xpath=ancestor::*[.//svg][1]//svg").first,
-            target_pdf.locator("xpath=.."),
-            target_pdf,
-        ]
-
-        for target in click_targets:
-            try:
-                if target.count() > 0:
-                    target.click(force=True, timeout=3000)
-                    page.wait_for_timeout(3500)
-            except Exception:
-                continue
-
-            if captured_downloads:
-                dl = captured_downloads[-1]
-                dl.save_as(PDF_PATH)
-                res_name = dl.suggested_filename or filename
-                browser.close()
-                return res_name
-
-            if captured_pdf_bytes:
-                with open(PDF_PATH, "wb") as f:
-                    f.write(captured_pdf_bytes[-1])
-                browser.close()
-                return filename
-
-            blobs = page.evaluate("() => window.__capturedPdfBlobs || []")
-            for b64_url in reversed(blobs):
-                if "," in b64_url:
-                    raw_bytes = base64.b64decode(b64_url.split(",", 1)[1])
-                    if raw_bytes.startswith(b"%PDF"):
-                        with open(PDF_PATH, "wb") as f:
-                            f.write(raw_bytes)
-                        browser.close()
-                        return filename
+        # 2. Если в чате есть второй актуальный день (например, Сегодня + Завтра) и его ещё нет в базе — догружаем
+        if len(top_dates) > 1:
+            sec_dt = top_dates[1]
+            sec_cand = by_date[sec_dt]
+            sec_date_key = f"{sec_dt[2]:02d}.{sec_dt[1]:02d}.{sec_dt[0]:04d}"
+            already_saved = (
+                sec_date_key in existing_days
+                and existing_days[sec_date_key].get("source_file") == sec_cand["name"]
+            )
+            if not already_saved:
+                try:
+                    print(f"Догружаем второй день для переключателя: {sec_cand['name']} ({sec_date_key})")
+                    sec_name = _click_and_save_pdf(
+                        page, sec_cand["locator"], sec_cand["name"], TEMP_PREV_PDF, captured_downloads, captured_pdf_bytes
+                    )
+                    downloaded.append((TEMP_PREV_PDF, sec_name))
+                except Exception as e:
+                    print(f"Не удалось догрузить предыдущий PDF ({e}), используем кеш schedule.json")
 
         browser.close()
-        raise RuntimeError(f"Не удалось скачать выбранный PDF '{filename}'")
+    return downloaded
 
 
 def split_subject_and_room(upper_items: list) -> tuple[str, str]:
@@ -289,7 +362,6 @@ def parse_coordinates(pdf_path: str) -> tuple[dict, dict]:
             y_top = by - 1.0
             y_bottom = (band_ys[b_idx + 1] + 8.0) if b_idx + 1 < len(band_ys) else 0.0
 
-            # Динамически вычисляем границы колонок по фактическим координатам заголовков классов в этой полосе
             band_headers = sorted([s for s in ch if abs(s[1] - by) <= 6], key=lambda s: s[0])
             dedup_headers = []
             for h in band_headers:
@@ -399,7 +471,7 @@ def parse_fallback_tables(pdf_path: str) -> dict:
     return schedule
 
 
-def parse_pdf(pdf_path: str, source_name: str):
+def parse_single_pdf_entry(pdf_path: str, source_name: str, now_str: str) -> dict:
     meta, schedule = parse_coordinates(pdf_path)
     non_empty = sum(1 for v in schedule.values() if v)
     if non_empty == 0:
@@ -416,23 +488,56 @@ def parse_pdf(pdf_path: str, source_name: str):
             return (int(parts[0]), parts[1])
         return (99, name)
 
-    msk = timezone(timedelta(hours=3))
     sorted_classes = {k: schedule[k] for k in sorted(schedule.keys(), key=cls_key)}
-    data = {
-        "updated_at": datetime.now(msk).strftime("%d.%m.%Y %H:%M"),
+    total_lessons = sum(len(v) for v in sorted_classes.values())
+    print(f"[{source_name}] Распознано классов: {len(sorted_classes)}, уроков: {total_lessons}, дата: {meta.get('date')}")
+
+    return {
+        "updated_at": now_str,
         "source_file": source_name,
         "meta": meta,
         "classes": sorted_classes,
     }
 
+
+def save_merged_schedule(downloaded_files: list[tuple[str, str]], days_dict: dict):
+    msk = timezone(timedelta(hours=3))
+    now_str = datetime.now(msk).strftime("%d.%m.%Y %H:%M")
+
+    for pdf_path, source_name in downloaded_files:
+        entry = parse_single_pdf_entry(pdf_path, source_name, now_str)
+        date_key = (entry["meta"].get("date") or source_name).strip()
+        days_dict[date_key] = entry
+
+    # Сортируем дни хронологически и храним последние 3 учебных дня
+    sorted_keys = sorted(days_dict.keys(), key=lambda k: (extract_date_tuple(k), k))
+    kept_keys = sorted_keys[-3:]
+    kept_days = {k: days_dict[k] for k in kept_keys}
+
+    newest_entry = kept_days[kept_keys[-1]]
+    data = {
+        "updated_at": now_str,
+        "source_file": newest_entry["source_file"],
+        "meta": newest_entry["meta"],
+        "classes": newest_entry["classes"],
+        "days": kept_days,
+    }
+
     with open(JSON_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-    total_lessons = sum(len(v) for v in sorted_classes.values())
-    print(f"Распознано классов: {len(sorted_classes)}, всего уроков: {total_lessons}, дата: {meta.get('date')}")
+    print(f"Сохранены дни в schedule.json: {list(kept_days.keys())}")
 
 
 if __name__ == "__main__":
-    name = download_latest_pdf()
-    parse_pdf(PDF_PATH, name)
-    print(f"Готово: {name}")
+    try:
+        existing = load_existing_days()
+        files = download_recent_pdfs(existing)
+        save_merged_schedule(files, existing)
+        print("Готово!")
+    finally:
+        if os.path.exists(TEMP_PREV_PDF):
+            try:
+                os.remove(TEMP_PREV_PDF)
+            except OSError:
+                pass
