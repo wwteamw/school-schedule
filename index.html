@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#090d16">
   <title>Расписание — Школа русской культуры</title>
+  <link rel="icon" type="image/svg+xml" href="./icon.svg?v=1">
+  <link rel="shortcut icon" href="./icon.svg?v=1">
+  <link rel="apple-touch-icon" id="appleTouchIcon" href="./icon.svg?v=1">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root, [data-theme="dark"] {
@@ -646,6 +650,24 @@
     if (savedTheme) {
       document.documentElement.setAttribute('data-theme', savedTheme);
     }
+
+    // Генерация PNG для Safari / iOS закладок из векторной иконки
+    (function setupAppleTouchIcon() {
+      const link = document.getElementById('appleTouchIcon');
+      if (!link) return;
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 180;
+          canvas.height = 180;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, 180, 180);
+          link.href = canvas.toDataURL('image/png');
+        } catch (_) {}
+      };
+      img.src = './icon.svg?v=1';
+    })();
 
     const els = {
       school: document.getElementById('schoolName'),
