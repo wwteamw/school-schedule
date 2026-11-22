@@ -9,10 +9,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ШРК Уроки">
   <title>Расписание — Школа русской культуры</title>
-  <link rel="manifest" href="./manifest.json">
-  <link rel="icon" type="image/svg+xml" href="./icon.svg?v=1">
-  <link rel="shortcut icon" href="./icon.svg?v=1">
-  <link rel="apple-touch-icon" id="appleTouchIcon" href="./icon.svg?v=1">
+  <link rel="manifest" id="manifestLink" href="./manifest.json?v=3">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg?v=3">
+  <link rel="shortcut icon" href="./icon.svg?v=3">
+  <link rel="apple-touch-icon" sizes="180x180" id="appleTouchIcon" href="./icon.svg?v=3">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root, [data-theme="dark"] {
@@ -160,8 +160,8 @@
       color: var(--accent);
     }
 
-    /* Компактная плашка подсказки установки для iOS */
-    .ios-install-sheet {
+    /* Универсальная плашка помощи по установке PWA */
+    .install-sheet {
       background: var(--card);
       border: 1px solid var(--accent);
       border-radius: 14px;
@@ -174,8 +174,20 @@
       font-size: 13px;
       box-shadow: var(--shadow);
     }
-    .ios-install-sheet.open { display: flex; }
-    .ios-install-close {
+    .install-sheet.open { display: flex; }
+    .install-sheet-body { flex: 1; line-height: 1.45; }
+    .install-copy-btn {
+      margin-top: 8px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 11px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .install-close {
       background: transparent;
       border: none;
       color: var(--muted);
@@ -590,19 +602,17 @@
           </div>
         </div>
         <div class="icon-actions">
-          <button class="icon-btn install-accent" id="installBtn" type="button" style="display:none" title="Установить на главный экран">📲</button>
+          <button class="icon-btn install-accent" id="installBtn" type="button" style="display:none" title="Установить приложение">📲</button>
           <button class="icon-btn" id="themeBtn" type="button" title="Сменить тему">🌙</button>
           <a class="icon-btn" href="./latest.pdf" target="_blank" title="Открыть оригинал PDF">📄 PDF</a>
         </div>
       </div>
     </header>
 
-    <!-- Подсказка установки для iPhone / Safari -->
-    <div class="ios-install-sheet" id="iosInstallSheet">
-      <div>
-        <b>📲 Установка на iPhone:</b> нажми кнопку <b>«Поделиться»</b> (⬆️) внизу браузера и выбери <b>«На экран „Домой“»</b> — появится иконка <b>ШРК</b> с работой без интернета.
-      </div>
-      <button class="ios-install-close" id="iosInstallClose" type="button" aria-label="Закрыть">✕</button>
+    <!-- Адаптивная подсказка установки для любого браузера -->
+    <div class="install-sheet" id="installSheet">
+      <div class="install-sheet-body" id="installSheetBody"></div>
+      <button class="install-close" id="installClose" type="button" aria-label="Закрыть">✕</button>
     </div>
 
     <!-- Переключатель разделов -->
@@ -648,7 +658,6 @@
   <div class="toast" id="toast">Скопировано в буфер обмена</div>
 
   <script>
-    // Понедельник: 1-й урок 30 минут (08:00–08:30), большие перемены по 20 мин после 3, 4 и 8 урока
     const BELLS_MONDAY = {
       1:  { start: '08:00', end: '08:30' },
       2:  { start: '08:40', end: '09:20' },
@@ -665,7 +674,6 @@
       13: { start: '18:20', end: '19:00' }
     };
 
-    // Вторник–пятница: все уроки по 40 минут, обычные перемены по 10 мин, большие по 20 мин после 3, 4 и 8 урока
     const BELLS_REGULAR = {
       1:  { start: '08:00', end: '08:40' },
       2:  { start: '08:50', end: '09:30' },
@@ -697,7 +705,7 @@
       document.documentElement.setAttribute('data-theme', savedTheme);
     }
 
-    // Генерация PNG 180×180 для iPhone / Safari «На экран Домой»
+    // Отрисовка чёткой PNG-иконки 180×180 на лету для iPhone / Safari
     (function setupAppleTouchIcon() {
       const link = document.getElementById('appleTouchIcon');
       if (!link) return;
@@ -712,13 +720,12 @@
           link.href = canvas.toDataURL('image/png');
         } catch (_) {}
       };
-      img.src = './icon.svg?v=1';
+      img.src = './icon.svg?v=3';
     })();
 
-    // Регистрация Service Worker для работы без интернета
     if ('serviceWorker' in navigator && !isTgWebApp) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        navigator.serviceWorker.register('./sw.js?v=3').catch(() => {});
       });
     }
 
@@ -729,8 +736,9 @@
       metaThemeColor: document.getElementById('metaThemeColor'),
       creatorLink: document.getElementById('creatorLink'),
       installBtn: document.getElementById('installBtn'),
-      iosInstallSheet: document.getElementById('iosInstallSheet'),
-      iosInstallClose: document.getElementById('iosInstallClose'),
+      installSheet: document.getElementById('installSheet'),
+      installSheetBody: document.getElementById('installSheetBody'),
+      installClose: document.getElementById('installClose'),
       themeBtn: document.getElementById('themeBtn'),
       tabClass: document.getElementById('tabClass'),
       tabTeacher: document.getElementById('tabTeacher'),
@@ -756,20 +764,21 @@
     let DATA = null;
     let ALL_TEACHERS = [];
     let mode = 'class';
-    let bellsTabDay = null; // 'monday' | 'regular'
+    let bellsTabDay = null;
     let currentGrade = localStorage.getItem('saved_grade') || '5';
     let currentClass = localStorage.getItem('selected_class') || '5 А';
     let currentTeacher = localStorage.getItem('selected_teacher') || '';
     let deferredInstallPrompt = null;
 
-    // Логика кнопки установки приложения (Android / Desktop + подсказка для iOS)
+    const ua = navigator.userAgent || '';
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isIos = /iphone|ipad|ipod/i.test(ua);
+    const isAndroid = /android/i.test(ua);
+    const isInAppWebView = /Telegram|VKClient|Instagram|FBAN|FBAV|Line\/|wv\)/i.test(ua);
+    const isDesktopFirefox = /firefox/i.test(ua) && !isAndroid && !isIos;
 
     if (!isStandalone && !isTgWebApp) {
-      if (isIos) {
-        els.installBtn.style.display = 'inline-flex';
-      }
+      els.installBtn.style.display = 'inline-flex';
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredInstallPrompt = e;
@@ -778,8 +787,43 @@
       window.addEventListener('appinstalled', () => {
         deferredInstallPrompt = null;
         els.installBtn.style.display = 'none';
+        els.installSheet.classList.remove('open');
         showToast('Приложение ШРК установлено!');
       });
+    }
+
+    function buildInstallHelpHtml() {
+      if (isInAppWebView) {
+        return `
+          <b>⚠️ Сайт открыт во встроенном окне мессенджера</b><br>
+          Встроенный браузер Telegram/VK блокирует установку приложений. Нажми <b>⋮</b> (или <b>Поделиться</b>) в углу экрана и выбери <b>«Открыть в браузере»</b> (Chrome / Safari), затем нажми <b>📲</b>.<br>
+          <button type="button" class="install-copy-btn" id="copySiteUrlBtn">📋 Скопировать ссылку сайта</button>
+        `;
+      }
+      if (isIos) {
+        return `
+          <b>📲 Установка на iPhone / iPad:</b><br>
+          1. Открой сайт в <b>Safari</b> и нажми кнопку <b>«Поделиться» (⬆️)</b> внизу экрана.<br>
+          2. Прокрути меню вниз и выбери <b>«На экран „Домой“» → «Добавить»</b>.
+        `;
+      }
+      if (isAndroid) {
+        return `
+          <b>📲 Установка на Android:</b><br>
+          Нажми <b>⋮</b> (три точки в правом верхнем углу браузера Chrome / Яндекс) и выбери пункт <b>«Установить приложение»</b> или <b>«Добавить на главный экран»</b>.
+        `;
+      }
+      if (isDesktopFirefox) {
+        return `
+          <b>💻 Установка на ПК:</b><br>
+          Настольный Firefox не поддерживает установку сайтов как приложений. Открой эту ссылку в <b>Chrome, Edge или Яндекс Браузере</b> — там кнопка <b>📲</b> установит приложение в 1 клик.<br>
+          <button type="button" class="install-copy-btn" id="copySiteUrlBtn">📋 Скопировать ссылку</button>
+        `;
+      }
+      return `
+        <b>📲 Как установить приложение:</b><br>
+        Нажми на значок установки <b>⊕ / 📲</b> справа в адресной строке браузера или открой меню <b>⋮ → «Установить ШРК Уроки»</b>.
+      `;
     }
 
     els.installBtn.addEventListener('click', async () => {
@@ -790,13 +834,23 @@
           els.installBtn.style.display = 'none';
         }
         deferredInstallPrompt = null;
-      } else if (isIos) {
-        els.iosInstallSheet.classList.toggle('open');
+        return;
+      }
+      els.installSheetBody.innerHTML = buildInstallHelpHtml();
+      els.installSheet.classList.toggle('open');
+      const copyBtn = document.getElementById('copySiteUrlBtn');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(location.origin + location.pathname);
+            showToast('Ссылка скопирована!');
+          } catch (_) {}
+        });
       }
     });
 
-    els.iosInstallClose.addEventListener('click', () => {
-      els.iosInstallSheet.classList.remove('open');
+    els.installClose.addEventListener('click', () => {
+      els.installSheet.classList.remove('open');
     });
 
     els.creatorLink.addEventListener('click', (e) => {

@@ -1,9 +1,9 @@
-const CACHE_NAME = 'shrk-schedule-v1';
+const CACHE_NAME = 'shrk-schedule-v3';
 const CORE_ASSETS = [
   './',
   './index.html',
-  './icon.svg?v=1',
-  './manifest.json'
+  './icon.svg?v=3',
+  './manifest.json?v=3'
 ];
 
 self.addEventListener('install', (event) => {
@@ -22,8 +22,6 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Стратегия Network-First: при наличии интернета всегда берём свежее расписание,
-// а если в школе пропала сеть — мгновенно отдаём последнюю сохранённую копию
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
