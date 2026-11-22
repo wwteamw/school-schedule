@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Расписание уроков — Школа русской культуры</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --card: #1a1d24;
+      --card-sub: #13161c;
+      --border: #282d37;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent: #3b82f6;
+      --dist-bg: rgba(245, 158, 11, 0.16);
+      --dist-text: #fcd34d;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 16px; }
+    .wrap { max-width: 680px; margin: 0 auto; }
+    .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    .meta { color: var(--muted); font-size: 13px; }
+    .tabs { display: flex; background: var(--card); border-radius: 10px; padding: 3px; border: 1px solid var(--border); }
+    .tab { background: transparent; color: var(--muted); border: none; padding: 7px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .tab.active { background: var(--accent); color: #fff; }
+    .controls { display: flex; gap: 10px; margin-bottom: 16px; }
+    select, input, a.btn { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); font-size: 15px; }
+    select, input { flex: 1; background: var(--card); color: var(--text); outline: none; }
+    a.btn { background: var(--accent); border-color: var(--accent); color: #fff; text-decoration: none; white-space: nowrap; font-weight: 600; display: inline-flex; align-items: center; }
+    .lesson { background: var(--card); border: 1px solid var(--border); padding: 12px 14px; border-radius: 12px; margin-bottom: 10px; display: flex; gap: 12px; align-items: flex-start; }
+    .num { font-weight: 700; color: var(--accent); min-width: 28px; height: 28px; background: rgba(59, 130, 246, 0.12); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .body { flex: 1; min-width: 0; }
+    .row-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .subj { font-weight: 600; font-size: 15px; }
+    .teacher { color: var(--muted); font-size: 13px; margin-top: 3px; }
+    .badge { font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: rgba(59, 130, 246, 0.15); color: #93c5fd; white-space: nowrap; }
+    .badge.dist { background: var(--dist-bg); color: var(--dist-text); }
+    .subgroups { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; width: 100%; }
+    .sg-card { background: var(--card-sub); border: 1px solid var(--border); border-radius: 9px; padding: 9px 10px; }
+    .sg-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .empty { color: var(--muted); text-align: center; padding: 30px 16px; background: var(--card); border-radius: 12px; border: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1 id="title">Расписание уроков</h1>
+        <div class="meta" id="meta">Загрузка...</div>
+      </div>
+      <div class="tabs">
+        <button class="tab active" id="btnModeClass" onclick="setMode('class')">По классам</button>
+        <button class="tab" id="btnModeTeacher" onclick="setMode('teacher')">По учителям</button>
+      </div>
+    </div>
+
+    <div class="controls" id="classBar">
+      <select id="classSelect"></select>
+      <a class="btn" href="./latest.pdf" target="_blank">Открыть PDF</a>
+    </div>
+
+    <div class="controls" id="teacherBar" style="display:none">
+      <input id="teacherInput" type="text" placeholder="Фамилия учителя (например, Бурый, Сенькина)..." />
+      <a class="btn" href="./latest.pdf" target="_blank">PDF</a>
+    </div>
+
+    <div id="list"></div>
+  </div>
+
+  <script>
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand();
+    }
+
+    const select = document.getElementById('classSelect');
+    const teacherInput = document.getElementById('teacherInput');
+    const list = document.getElementById('list');
+    const meta = document.getElementById('meta');
+    const titleEl = document.getElementById('title');
+    let data = null;
+    let mode = 'class';
+
+    function badgeHtml(room) {
+      if (!room) return '';
+      const isDist = room === 'ДИСТ';
+      return `<span class="badge ${isDist ? 'dist' : ''}">${isDist ? '💻 ДИСТ' : 'каб. ' + room}</span>`;
+    }
+
+    function setMode(m) {
+      mode = m;
+      document.getElementById('classBar').style.display = m === 'class' ? 'flex' : 'none';
+      document.getElementById('teacherBar').style.display = m === 'teacher' ? 'flex' : 'none';
+      document.getElementById('btnModeClass').classList.toggle('active', m === 'class');
+      document.getElementById('btnModeTeacher').classList.toggle('active', m === 'teacher');
+      if (m === 'class') renderClass(select.value);
+      else renderTeacher(teacherInput.value);
+    }
+
+    function renderClass(cls) {
+      if (!data) return;
+      localStorage.setItem('selected_class', cls);
+      const lessons = (data.classes && data.classes[cls]) || [];
+      if (!lessons.length) {
+        list.innerHTML = '<div class="empty">Уроков не найдено</div>';
+        return;
+      }
+      list.innerHTML = lessons.map((l, i) => {
+        const num = l.lesson || l.num || (i + 1);
+        if (l.subgroups && l.subgroups.length) {
+          return `
+            <div class="lesson">
+              <div class="num">${num}</div>
+              <div class="subgroups">
+                ${l.subgroups.map(sg => `
+                  <div class="sg-card">
+                    <div class="sg-head"><span>${sg.group} подгруппа</span>${badgeHtml(sg.room)}</div>
+                    <div class="subj">${sg.subject}</div>
+                    <div class="teacher">${sg.teacher || ''}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>`;
+        }
+        if (l.subject) {
+          return `
+            <div class="lesson">
+              <div class="num">${num}</div>
+              <div class="body">
+                <div class="row-main">
+                  <div class="subj">${l.subject}</div>
+                  ${badgeHtml(l.room)}
+                </div>
+                <div class="teacher">${l.teacher || ''}</div>
+              </div>
+            </div>`;
+        }
+        return `
+          <div class="lesson">
+            <div class="num">${num}</div>
+            <div class="body"><div class="subj">${l.text || ''}</div></div>
+          </div>`;
+      }).join('');
+    }
+
+    function renderTeacher(query) {
+      if (!data) return;
+      const q = (query || '').trim().toLowerCase();
+      localStorage.setItem('selected_teacher', query);
+      if (q.length < 2) {
+        list.innerHTML = '<div class="empty">Введите минимум 2 буквы фамилии учителя</div>';
+        return;
+      }
+      const hits = [];
+      Object.entries(data.classes || {}).forEach(([cls, lessons]) => {
+        lessons.forEach(l => {
+          const num = l.lesson || Number(l.num) || 0;
+          if (l.subgroups) {
+            l.subgroups.forEach(sg => {
+              if ((sg.teacher || '').toLowerCase().includes(q)) {
+                hits.push({ num, cls: `${cls} (${sg.group} гр.)`, subject: sg.subject, room: sg.room, teacher: sg.teacher });
+              }
+            });
+          } else if ((l.teacher || '').toLowerCase().includes(q)) {
+            hits.push({ num, cls, subject: l.subject, room: l.room, teacher: l.teacher });
+          } else if ((l.text || '').toLowerCase().includes(q)) {
+            hits.push({ num, cls, subject: l.text, room: '', teacher: '' });
+          }
+        });
+      });
+      hits.sort((a, b) => a.num - b.num || a.cls.localeCompare(b.cls, 'ru'));
+      if (!hits.length) {
+        list.innerHTML = '<div class="empty">Уроков для этого учителя не найдено</div>';
+        return;
+      }
+      list.innerHTML = hits.map(h => `
+        <div class="lesson">
+          <div class="num">${h.num}</div>
+          <div class="body">
+            <div class="row-main">
+              <div class="subj">${h.cls} — ${h.subject}</div>
+              ${badgeHtml(h.room)}
+            </div>
+            <div class="teacher">${h.teacher}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    fetch('./schedule.json?t=' + Date.now())
+      .then(r => r.json())
+      .then(json => {
+        data = json;
+        if (json.meta && json.meta.date) {
+          titleEl.textContent = `Расписание на ${json.meta.date}`;
+        }
+        const weekday = (json.meta && json.meta.weekday) ? ` (${json.meta.weekday})` : '';
+        meta.textContent = `${json.source_file || 'Расписание'}${weekday} • Обновлено: ${json.updated_at || '—'}`;
+        const classes = Object.keys(json.classes || {});
+        select.innerHTML = classes.map(c => `<option value="${c}">${c}</option>`).join('');
+        const saved = localStorage.getItem('selected_class');
+        const initial = classes.includes(saved) ? saved : classes[0];
+        if (initial) {
+          select.value = initial;
+          renderClass(initial);
+        }
+        teacherInput.value = localStorage.getItem('selected_teacher') || '';
+      })
+      .catch(() => { meta.textContent = 'Не удалось загрузить schedule.json'; });
+
+    select.addEventListener('change', e => renderClass(e.target.value));
+    teacherInput.addEventListener('input', e => renderTeacher(e.target.value));
+  </script>
+</body>
+</html>
