@@ -739,10 +739,16 @@
       color: var(--muted);
       padding: 8px 10px;
       border-radius: 10px;
-      font-size: 12px;
+      font-size: 12.5px;
+      line-height: 1.25;
       font-weight: 700;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
       box-shadow: var(--card-shadow);
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
     }
     .bells-switch-btn.active {
       background: var(--tab-active);
@@ -1272,7 +1278,8 @@
   <div class="toast" id="toast">Скопировано</div>
 
   <script>
-    const BELLS_MONDAY = {
+    // Расписание звонков на 2026–2027 учебный год: Понедельник и четверг
+    const BELLS_MON_THU = {
       1:  { start: '08:00', end: '08:30' },
       2:  { start: '08:40', end: '09:20' },
       3:  { start: '09:30', end: '10:10' },
@@ -1280,7 +1287,7 @@
       5:  { start: '11:30', end: '12:10' },
       6:  { start: '12:20', end: '13:00' },
       7:  { start: '13:10', end: '13:50' },
-      8:  { start: '14:00', end: '14:40' },
+      8:  { start: '14:00', end: '14:30' },
       9:  { start: '15:00', end: '15:40' },
       10: { start: '15:50', end: '16:30' },
       11: { start: '16:40', end: '17:20' },
@@ -1288,20 +1295,21 @@
       13: { start: '18:20', end: '19:00' }
     };
 
-    const BELLS_REGULAR = {
+    // Расписание звонков на 2026–2027 учебный год: Вторник, среда, пятница
+    const BELLS_TUE_WED_FRI = {
       1:  { start: '08:00', end: '08:40' },
       2:  { start: '08:50', end: '09:30' },
       3:  { start: '09:40', end: '10:20' },
       4:  { start: '10:40', end: '11:20' },
       5:  { start: '11:40', end: '12:20' },
       6:  { start: '12:30', end: '13:10' },
-      7:  { start: '13:20', end: '14:00' },
-      8:  { start: '14:10', end: '14:50' },
-      9:  { start: '15:10', end: '15:50' },
+      7:  { start: '13:20', end: '13:55' },
+      8:  { start: '14:00', end: '14:40' },
+      9:  { start: '15:00', end: '15:40' },
       10: { start: '16:00', end: '16:40' },
       11: { start: '16:50', end: '17:30' },
-      12: { start: '17:40', end: '18:20' },
-      13: { start: '18:30', end: '19:10' }
+      12: { start: '17:40', end: '18:15' },
+      13: { start: '18:25', end: '19:00' }
     };
 
     const ICON_SUN = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><line x1="12" y1="2" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="6.7" y2="6.7"/><line x1="17.3" y1="17.3" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="6.7" y2="17.3"/><line x1="17.3" y1="6.7" x2="19.07" y2="4.93"/></svg>';
@@ -1353,7 +1361,7 @@
 
     if ('serviceWorker' in navigator && !isTgWebApp) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=8').then(reg => reg.update()).catch(() => {});
+        navigator.serviceWorker.register('./sw.js?v=9').then(reg => reg.update()).catch(() => {});
       });
     }
 
@@ -1598,6 +1606,7 @@
         nextStudyDateStr: formatDateObj(nextDt),
         isNextTomorrow: (nextDt.getTime() - todayDt.getTime()) <= 86400000 * 1.2,
         todayTs: todayDt.getTime(),
+        dow: todayDt.getDay(),
         minutes: Number(map.hour) * 60 + Number(map.minute)
       };
     }
@@ -1635,7 +1644,7 @@
       if (!DAYS_MAP[key]) return;
       DATA = DAYS_MAP[key];
       ALL_TEACHERS = collectTeachers(DATA.classes);
-      bellsTabDay = isScheduleMonday() ? 'monday' : 'regular';
+      bellsTabDay = isScheduleMonThu() ? 'mon_thu' : 'tue_wed_fri';
 
       const dateVal = (DATA.meta && DATA.meta.date) || key;
       const wdVal = DATA.meta && DATA.meta.weekday;
@@ -1778,18 +1787,24 @@
       }
     });
 
-    function isScheduleMonday() {
-      if (!DATA) return new Date().getDay() === 1;
+    // Определяем, относится ли выбранный учебный день к сетке «Понедельник, четверг»
+    function isScheduleMonThu() {
+      if (!DATA) {
+        const d = getMskNow().dow;
+        return d === 1 || d === 4;
+      }
       const wd = ((DATA.meta && DATA.meta.weekday) || '').toLowerCase();
-      if (wd.includes('понедельник')) return true;
-      if (wd && !wd.includes('понедельник')) return false;
-      const dateRaw = (DATA.meta && DATA.meta.date) || DATA.source_file || '';
+      if (wd.includes('понедельник') || wd.includes('четверг')) return true;
+      if (wd) return false;
+      const dateRaw = (DATA.meta && DATA.meta.date) || selectedDayKey || DATA.source_file || '';
       const dt = parseDateKey(dateRaw);
-      return dt ? dt.getDay() === 1 : false;
+      if (dt) return dt.getDay() === 1 || dt.getDay() === 4;
+      const d = getMskNow().dow;
+      return d === 1 || d === 4;
     }
 
     function getActiveBells() {
-      return isScheduleMonday() ? BELLS_MONDAY : BELLS_REGULAR;
+      return isScheduleMonThu() ? BELLS_MON_THU : BELLS_TUE_WED_FRI;
     }
 
     function toMin(hhmm) {
@@ -2311,20 +2326,22 @@
       `;
     }
 
-    // 2. Расписание звонков внутри BTW
+    // 2. Расписание звонков внутри BTW (2026–2027 уч. год)
     function renderBellsUI() {
       if (!bellsTabDay) {
-        bellsTabDay = isScheduleMonday() ? 'monday' : 'regular';
+        bellsTabDay = isScheduleMonThu() ? 'mon_thu' : 'tue_wed_fri';
       }
-      const chosenMap = bellsTabDay === 'monday' ? BELLS_MONDAY : BELLS_REGULAR;
-      const curMin = getMskNow().minutes;
-      const mskTodayMonday = new Date().getDay() === 1;
-      const highlightToday = (bellsTabDay === 'monday') === mskTodayMonday;
+      const chosenMap = bellsTabDay === 'mon_thu' ? BELLS_MON_THU : BELLS_TUE_WED_FRI;
+      const msk = getMskNow();
+      const curMin = msk.minutes;
+      const highlightToday = bellsTabDay === 'mon_thu'
+        ? (msk.dow === 1 || msk.dow === 4)
+        : (msk.dow === 2 || msk.dow === 3 || msk.dow === 5);
 
       const switchHtml = `
         <div class="bells-switch">
-          <button type="button" class="bells-switch-btn ${bellsTabDay === 'monday' ? 'active' : ''}" data-bday="monday">Понедельник (1 ур. — 30м)</button>
-          <button type="button" class="bells-switch-btn ${bellsTabDay === 'regular' ? 'active' : ''}" data-bday="regular">Вт – Пт (все по 40м)</button>
+          <button type="button" class="bells-switch-btn ${bellsTabDay === 'mon_thu' ? 'active' : ''}" data-bday="mon_thu">Понедельник, четверг</button>
+          <button type="button" class="bells-switch-btn ${bellsTabDay === 'tue_wed_fri' ? 'active' : ''}" data-bday="tue_wed_fri">Вторник, среда, пятница</button>
         </div>
       `;
 
