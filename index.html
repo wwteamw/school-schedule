@@ -142,10 +142,6 @@
       0% { transform: scaleX(0.15); opacity: 0.5; }
       100% { transform: scaleX(1); opacity: 1; }
     }
-    @keyframes modalPopIn {
-      from { opacity: 0; transform: scale(0.94) translateY(8px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
-    }
 
     /* Шапка */
     .topbar {
@@ -413,136 +409,7 @@
       flex-shrink: 0;
     }
 
-    /* Модальное окно QR-кода */
-    .qr-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(8, 12, 22, 0.68);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 18px;
-      z-index: 80;
-    }
-    .qr-backdrop.open { display: flex; }
-    .qr-modal {
-      width: 100%;
-      max-width: 340px;
-      background: var(--surface);
-      border: 1px solid var(--border-strong);
-      border-radius: 18px;
-      padding: 16px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
-      animation: modalPopIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
-      text-align: center;
-    }
-    .qr-modal-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    .qr-modal-title {
-      font-size: 16px;
-      font-weight: 800;
-      letter-spacing: -0.01em;
-    }
-    .qr-close-btn {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      color: var(--muted);
-      width: 30px;
-      height: 30px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .qr-scope-tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      background: var(--track);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 3px;
-      margin-bottom: 12px;
-    }
-    .qr-scope-btn {
-      background: transparent;
-      border: none;
-      color: var(--muted);
-      padding: 6px 8px;
-      border-radius: 7px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      transition: 0.15s;
-    }
-    .qr-scope-btn.active {
-      background: var(--tab-active);
-      color: var(--text);
-      box-shadow: var(--tab-shadow);
-    }
-    .qr-canvas-box {
-      background: #ffffff;
-      border-radius: 14px;
-      padding: 14px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 10px;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
-    }
-    .qr-canvas-box canvas,
-    .qr-canvas-box img {
-      width: 210px;
-      height: 210px;
-      display: block;
-      border-radius: 4px;
-    }
-    .qr-hint {
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 12px;
-      line-height: 1.4;
-    }
-    .qr-modal-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-    .qr-act-btn {
-      height: 38px;
-      border-radius: 10px;
-      font-size: 12.5px;
-      font-weight: 700;
-      cursor: pointer;
-      border: 1px solid var(--border);
-      background: var(--surface-2);
-      color: var(--text);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      transition: transform 0.1s ease, border-color 0.15s ease;
-    }
-    .qr-act-btn:active { transform: scale(0.97); }
-    .qr-act-btn.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #fff;
-    }
-
-    /* Плавная аккордеон-панель выбора параллели и класса (60 FPS без рывков) */
+    /* Плавная аккордеон-панель выбора параллели и класса */
     .drawer-wrap {
       display: grid;
       grid-template-rows: 0fr;
@@ -849,21 +716,22 @@
       background: var(--border);
     }
 
-    /* ================= РАЗДЕЛ BTW ================= */
+    /* ================= РАЗДЕЛ BTW (4 ВКЛАДКИ) ================= */
     .btw-nav {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      display: flex;
       gap: 6px;
       margin-bottom: 10px;
     }
     .btw-nav-btn {
+      flex: 1 1 auto;
       background: var(--surface);
       border: 1px solid var(--border);
       color: var(--muted);
-      padding: 8px 6px;
+      padding: 8px 7px;
       border-radius: 10px;
       font-size: 12.5px;
       font-weight: 700;
+      white-space: nowrap;
       cursor: pointer;
       box-shadow: var(--card-shadow);
       transition: 0.15s;
@@ -1254,6 +1122,98 @@
     .bj-btn.stand { background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); }
     .bj-btn.double { background: var(--warn-soft); color: var(--warn); border: 1px solid rgba(245, 158, 11, 0.45); }
 
+    /* 4. Карточка QR-кода внутри BTW */
+    .qr-inline-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: var(--card-shadow);
+      text-align: center;
+      animation: fadeSlideIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .qr-scope-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--track);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      max-width: 340px;
+      margin: 0 auto 14px;
+    }
+    .qr-scope-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 7px 8px;
+      border-radius: 7px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: 0.15s;
+    }
+    .qr-scope-btn.active {
+      background: var(--tab-active);
+      color: var(--text);
+      box-shadow: var(--tab-shadow);
+    }
+    .qr-canvas-box {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 10px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+    }
+    .qr-canvas-box canvas {
+      width: 220px;
+      height: 220px;
+      display: block;
+      border-radius: 4px;
+    }
+    .qr-hint {
+      font-size: 12.5px;
+      color: var(--muted);
+      max-width: 320px;
+      margin: 0 auto 14px;
+      line-height: 1.42;
+    }
+    .qr-inline-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      max-width: 340px;
+      margin: 0 auto;
+    }
+    .qr-act-btn {
+      height: 40px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: transform 0.1s ease, border-color 0.15s ease;
+    }
+    .qr-act-btn:active { transform: scale(0.97); }
+    .qr-act-btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
     /* Карточка ожидания завтрашнего расписания */
     .waiting-card {
       background: var(--surface);
@@ -1331,6 +1291,7 @@
     @media (max-width: 420px) {
       h1 { font-size: 18px; }
       .divider-note { padding-left: 8px; }
+      .btw-nav-btn { font-size: 12px; padding: 8px 5px; }
     }
   </style>
 </head>
@@ -1350,14 +1311,6 @@
       <div class="top-actions">
         <button class="top-btn icon-only accent" id="installBtn" type="button" style="display:none" title="Установить приложение">📲</button>
         <a class="top-btn" href="./latest.pdf" target="_blank" title="Оригинал PDF">PDF</a>
-        <button class="top-btn icon-only" id="qrBtn" type="button" aria-label="QR-код расписания" title="QR-код расписания">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <rect x="3" y="3" width="7" height="7" rx="1.4"/>
-            <rect x="14" y="3" width="7" height="7" rx="1.4"/>
-            <rect x="3" y="14" width="7" height="7" rx="1.4"/>
-            <path d="M14 14h3v3h-3zM20 14v3h-2M14 20h3M19 19h2v2h-2z"/>
-          </svg>
-        </button>
         <button class="top-btn icon-only" id="themeBtn" type="button" aria-label="Сменить тему" title="Сменить тему"></button>
       </div>
     </header>
@@ -1413,12 +1366,13 @@
       <div class="horiz-scroll" id="teacherChips"></div>
     </div>
 
-    <!-- Подменю раздела BTW -->
+    <!-- Подменю раздела BTW (со встроенным QR) -->
     <div id="btwPanel" style="display:none">
       <div class="btw-nav">
         <button class="btw-nav-btn active" type="button" data-btw="gpa">Средний балл</button>
         <button class="btw-nav-btn" type="button" data-btw="bells">Звонки</button>
         <button class="btw-nav-btn" type="button" data-btw="bj">Блэкджек</button>
+        <button class="btw-nav-btn" type="button" data-btw="qr">QR</button>
       </div>
     </div>
 
@@ -1431,35 +1385,12 @@
     <main id="contentList"></main>
   </div>
 
-  <!-- Модальное окно QR-шеринга -->
-  <div class="qr-backdrop" id="qrModal" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
-    <div class="qr-modal">
-      <div class="qr-modal-head">
-        <div class="qr-modal-title" id="qrModalTitle">QR-код расписания</div>
-        <button class="qr-close-btn" id="qrCloseBtn" type="button" aria-label="Закрыть">✕</button>
-      </div>
-
-      <div class="qr-scope-tabs">
-        <button class="qr-scope-btn active" id="qrScopeSite" type="button">Весь сайт</button>
-        <button class="qr-scope-btn" id="qrScopeClass" type="button">Класс 5 А</button>
-      </div>
-
-      <div class="qr-canvas-box" id="qrCanvasWrap">
-        <canvas id="qrCanvas" width="440" height="440"></canvas>
-      </div>
-
-      <div class="qr-hint" id="qrHintText">Наведи камеру телефона — сразу откроется актуальное расписание ШРК</div>
-
-      <div class="qr-modal-actions">
-        <button class="qr-act-btn" id="qrCopyUrlBtn" type="button">Скопировать ссылку</button>
-        <button class="qr-act-btn primary" id="qrDownloadBtn" type="button">Скачать PNG</button>
-      </div>
-    </div>
-  </div>
-
   <div class="toast" id="toast">Скопировано</div>
 
   <script>
+    const SHARE_FOOTER = '🌐 https://wwteamw.github.io/school-schedule/';
+    const PUBLIC_SITE_URL = 'https://wwteamw.github.io/school-schedule/';
+
     // Расписание звонков на 2026–2027 учебный год: Понедельник и четверг
     const BELLS_MON_THU = {
       1:  { start: '08:00', end: '08:30' },
@@ -1543,7 +1474,7 @@
 
     if ('serviceWorker' in navigator && !isTgWebApp) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=11').then(reg => reg.update()).catch(() => {});
+        navigator.serviceWorker.register('./sw.js?v=12').then(reg => reg.update()).catch(() => {});
       });
     }
 
@@ -1576,17 +1507,7 @@
       liveBar: document.getElementById('liveBar'),
       liveLeft: document.getElementById('liveLeft'),
       liveRight: document.getElementById('liveRight'),
-      qrBtn: document.getElementById('qrBtn'),
       shareBtn: document.getElementById('shareBtn'),
-      qrModal: document.getElementById('qrModal'),
-      qrCloseBtn: document.getElementById('qrCloseBtn'),
-      qrScopeSite: document.getElementById('qrScopeSite'),
-      qrScopeClass: document.getElementById('qrScopeClass'),
-      qrCanvasWrap: document.getElementById('qrCanvasWrap'),
-      qrCanvas: document.getElementById('qrCanvas'),
-      qrHintText: document.getElementById('qrHintText'),
-      qrCopyUrlBtn: document.getElementById('qrCopyUrlBtn'),
-      qrDownloadBtn: document.getElementById('qrDownloadBtn'),
       list: document.getElementById('contentList'),
       toast: document.getElementById('toast')
     };
@@ -1598,9 +1519,9 @@
     let DATA = null;
     let ALL_TEACHERS = [];
     let mode = 'class'; // 'class' | 'teacher' | 'btw'
-    let btwSub = 'gpa'; // 'gpa' | 'bells' | 'bj'
+    let btwSub = 'gpa'; // 'gpa' | 'bells' | 'bj' | 'qr'
     let bellsTabDay = null;
-    let qrScope = 'site'; // 'site' | 'context'
+    let qrScope = 'site'; // 'site' | 'class'
 
     // Поддержка прямых QR-ссылок (?class=9%20Б или ?teacher=Иванова%20И.И.)
     let urlRequestedClass = '';
@@ -1717,7 +1638,7 @@
       if (copyBtn) {
         copyBtn.addEventListener('click', async () => {
           try {
-            await navigator.clipboard.writeText(location.origin + location.pathname);
+            await navigator.clipboard.writeText(PUBLIC_SITE_URL);
             showToast('Ссылка скопирована');
           } catch (_) {}
         });
@@ -2427,178 +2348,6 @@
       els.list.innerHTML = `<div class="lessons-stack smooth-enter">${blocks.join('')}</div>`;
     }
 
-    /* ================= QR-КОД ДЛЯ ШЕРИНГА (В ШАПКЕ) ================= */
-    function isTeacherContextActive() {
-      return mode === 'teacher' && Boolean(currentTeacher);
-    }
-
-    function getQrTargetUrl() {
-      const base = location.origin + location.pathname;
-      if (qrScope === 'context') {
-        if (isTeacherContextActive()) {
-          return `${base}?teacher=${encodeURIComponent(currentTeacher)}`;
-        }
-        if (currentClass) {
-          return `${base}?class=${encodeURIComponent(currentClass)}`;
-        }
-      }
-      return base;
-    }
-
-    function drawQrCodeToCanvas(canvas, urlText) {
-      const ctx = canvas.getContext('2d');
-      const size = canvas.width;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, size, size);
-
-      if (typeof window.qrcode === 'function') {
-        const qr = window.qrcode(0, 'M');
-        qr.addData(urlText);
-        qr.make();
-        const count = qr.getModuleCount();
-        const quiet = 2;
-        const total = count + quiet * 2;
-        const cell = size / total;
-
-        ctx.fillStyle = '#0f172a';
-        for (let r = 0; r < count; r++) {
-          for (let c = 0; c < count; c++) {
-            if (qr.isDark(r, c)) {
-              const x = Math.floor((c + quiet) * cell);
-              const y = Math.floor((r + quiet) * cell);
-              const w = Math.ceil((c + quiet + 1) * cell) - x;
-              const h = Math.ceil((r + quiet + 1) * cell) - y;
-              ctx.fillRect(x, y, w, h);
-            }
-          }
-        }
-        return true;
-      }
-
-      const fallbackImg = new Image();
-      fallbackImg.crossOrigin = 'anonymous';
-      fallbackImg.onload = () => {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, size, size);
-        ctx.drawImage(fallbackImg, 0, 0, size, size);
-      };
-      fallbackImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=440x440&margin=12&data=' + encodeURIComponent(urlText);
-      return false;
-    }
-
-    function updateQrModalView() {
-      const teacherCtx = isTeacherContextActive();
-      els.qrScopeClass.textContent = teacherCtx ? currentTeacher : `Класс ${currentClass}`;
-      els.qrScopeSite.classList.toggle('active', qrScope === 'site');
-      els.qrScopeClass.classList.toggle('active', qrScope === 'context');
-
-      const targetUrl = getQrTargetUrl();
-      drawQrCodeToCanvas(els.qrCanvas, targetUrl);
-
-      if (qrScope === 'context') {
-        els.qrHintText.textContent = teacherCtx
-          ? `При сканировании сразу откроется расписание учителя (${currentTeacher})`
-          : `При сканировании сразу откроется расписание класса ${currentClass}`;
-      } else {
-        els.qrHintText.textContent = 'Наведи камеру телефона — сразу откроется актуальное расписание ШРК';
-      }
-    }
-
-    function openQrModal() {
-      updateQrModalView();
-      els.qrModal.classList.add('open');
-    }
-
-    function closeQrModal() {
-      els.qrModal.classList.remove('open');
-    }
-
-    els.qrBtn.addEventListener('click', openQrModal);
-    els.qrCloseBtn.addEventListener('click', closeQrModal);
-    els.qrModal.addEventListener('click', (e) => {
-      if (e.target === els.qrModal) closeQrModal();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && els.qrModal.classList.contains('open')) {
-        closeQrModal();
-      }
-    });
-
-    els.qrScopeSite.addEventListener('click', () => {
-      qrScope = 'site';
-      updateQrModalView();
-    });
-    els.qrScopeClass.addEventListener('click', () => {
-      qrScope = 'context';
-      updateQrModalView();
-    });
-
-    els.qrCopyUrlBtn.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(getQrTargetUrl());
-        showToast('Ссылка скопирована');
-      } catch (_) {
-        showToast('Не удалось скопировать');
-      }
-    });
-
-    els.qrDownloadBtn.addEventListener('click', () => {
-      try {
-        const teacherCtx = isTeacherContextActive();
-        const poster = document.createElement('canvas');
-        poster.width = 800;
-        poster.height = 960;
-        const pctx = poster.getContext('2d');
-
-        pctx.fillStyle = '#0b0f19';
-        pctx.fillRect(0, 0, 800, 960);
-
-        pctx.fillStyle = '#f1f5f9';
-        pctx.textAlign = 'center';
-        pctx.font = '800 42px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        pctx.fillText('Расписание уроков — ШРК', 400, 105);
-
-        pctx.fillStyle = '#38bdf8';
-        pctx.font = '700 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        const subLabel = qrScope === 'context'
-          ? (teacherCtx ? `Учитель: ${currentTeacher}` : `Прямой вход: ${currentClass} класс`)
-          : 'Актуальное расписание со звонками';
-        pctx.fillText(subLabel, 400, 155);
-
-        const boxX = 130, boxY = 205, boxS = 540, rad = 32;
-        pctx.fillStyle = '#ffffff';
-        pctx.beginPath();
-        pctx.moveTo(boxX + rad, boxY);
-        pctx.arcTo(boxX + boxS, boxY, boxX + boxS, boxY + boxS, rad);
-        pctx.arcTo(boxX + boxS, boxY + boxS, boxX, boxY + boxS, rad);
-        pctx.arcTo(boxX, boxY + boxS, boxX, boxY, rad);
-        pctx.arcTo(boxX, boxY, boxX + boxS, boxY, rad);
-        pctx.closePath();
-        pctx.fill();
-
-        pctx.drawImage(els.qrCanvas, boxX + 35, boxY + 35, boxS - 70, boxS - 70);
-
-        pctx.fillStyle = '#94a3b8';
-        pctx.font = '600 23px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        pctx.fillText('Наведите камеру телефона на QR-код', 400, 815);
-
-        pctx.fillStyle = '#64748b';
-        pctx.font = '600 19px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-        pctx.fillText((location.host + location.pathname).replace(/\/$/, ''), 400, 860);
-
-        const link = document.createElement('a');
-        const rawSuffix = qrScope === 'context'
-          ? '-' + (teacherCtx ? currentTeacher : currentClass).replace(/\s+/g, '')
-          : '';
-        link.download = `shrk-qr${rawSuffix}.png`;
-        link.href = poster.toDataURL('image/png');
-        link.click();
-        showToast('Карточка QR сохранена');
-      } catch (_) {
-        showToast('Сделай скриншот экрана');
-      }
-    });
-
     /* ================= ЛОГИКА РАЗДЕЛА BTW ================= */
     function renderBtwUI() {
       els.btwPanel.querySelectorAll('[data-btw]').forEach(btn => {
@@ -2607,7 +2356,8 @@
 
       if (btwSub === 'gpa') renderGpaUI();
       else if (btwSub === 'bells') renderBellsUI();
-      else renderBlackjackUI();
+      else if (btwSub === 'bj') renderBlackjackUI();
+      else renderQrBtwUI();
     }
 
     // 1. Калькулятор среднего балла
@@ -2758,7 +2508,7 @@
       els.list.innerHTML = `${switchHtml}<div class="bells-card">${rows}</div>`;
     }
 
-    // 3. Блэкджек
+    // 3. Блэкджек внутри BTW
     function createDeck() {
       const suits = ['♠', '♥', '♦', '♣'];
       const ranks = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
@@ -3076,8 +2826,144 @@
       `;
     }
 
+    // 4. Вкладка QR внутри BTW
+    function getQrTargetUrl() {
+      if (qrScope === 'class' && currentClass) {
+        return `${PUBLIC_SITE_URL}?class=${encodeURIComponent(currentClass)}`;
+      }
+      return PUBLIC_SITE_URL;
+    }
+
+    function drawQrCodeToCanvas(canvas, urlText) {
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const size = canvas.width;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+
+      if (typeof window.qrcode === 'function') {
+        const qr = window.qrcode(0, 'M');
+        qr.addData(urlText);
+        qr.make();
+        const count = qr.getModuleCount();
+        const quiet = 2;
+        const total = count + quiet * 2;
+        const cell = size / total;
+
+        ctx.fillStyle = '#0f172a';
+        for (let r = 0; r < count; r++) {
+          for (let c = 0; c < count; c++) {
+            if (qr.isDark(r, c)) {
+              const x = Math.floor((c + quiet) * cell);
+              const y = Math.floor((r + quiet) * cell);
+              const w = Math.ceil((c + quiet + 1) * cell) - x;
+              const h = Math.ceil((r + quiet + 1) * cell) - y;
+              ctx.fillRect(x, y, w, h);
+            }
+          }
+        }
+        return;
+      }
+
+      const fallbackImg = new Image();
+      fallbackImg.crossOrigin = 'anonymous';
+      fallbackImg.onload = () => {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(fallbackImg, 0, 0, size, size);
+      };
+      fallbackImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=440x440&margin=12&data=' + encodeURIComponent(urlText);
+    }
+
+    function renderQrBtwUI() {
+      const hintText = qrScope === 'class'
+        ? `При сканировании сразу откроется расписание класса ${currentClass}`
+        : 'Наведи камеру телефона — сразу откроется актуальное расписание ШРК';
+
+      els.list.innerHTML = `
+        <div class="qr-inline-card">
+          <div class="qr-scope-tabs">
+            <button class="qr-scope-btn ${qrScope === 'site' ? 'active' : ''}" type="button" data-qr-scope="site">Весь сайт</button>
+            <button class="qr-scope-btn ${qrScope === 'class' ? 'active' : ''}" type="button" data-qr-scope="class">Класс ${escapeHtml(currentClass)}</button>
+          </div>
+
+          <div class="qr-canvas-box">
+            <canvas id="btwQrCanvas" width="440" height="440"></canvas>
+          </div>
+
+          <div class="qr-hint">${escapeHtml(hintText)}</div>
+
+          <div class="qr-inline-actions">
+            <button class="qr-act-btn" type="button" data-qr-act="copy">Скопировать ссылку</button>
+            <button class="qr-act-btn primary" type="button" data-qr-act="download">Скачать PNG</button>
+          </div>
+        </div>
+      `;
+
+      const canvas = document.getElementById('btwQrCanvas');
+      drawQrCodeToCanvas(canvas, getQrTargetUrl());
+    }
+
+    function downloadQrPoster() {
+      const qrCanvas = document.getElementById('btwQrCanvas');
+      if (!qrCanvas) return;
+      try {
+        const poster = document.createElement('canvas');
+        poster.width = 800;
+        poster.height = 960;
+        const pctx = poster.getContext('2d');
+
+        pctx.fillStyle = '#0b0f19';
+        pctx.fillRect(0, 0, 800, 960);
+
+        pctx.fillStyle = '#f1f5f9';
+        pctx.textAlign = 'center';
+        pctx.font = '800 42px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        pctx.fillText('Расписание уроков — ШРК', 400, 105);
+
+        pctx.fillStyle = '#38bdf8';
+        pctx.font = '700 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        pctx.fillText(
+          qrScope === 'class' ? `Прямой вход: ${currentClass} класс` : 'Актуальное расписание со звонками',
+          400,
+          155
+        );
+
+        const boxX = 130, boxY = 205, boxS = 540, rad = 32;
+        pctx.fillStyle = '#ffffff';
+        pctx.beginPath();
+        pctx.moveTo(boxX + rad, boxY);
+        pctx.arcTo(boxX + boxS, boxY, boxX + boxS, boxY + boxS, rad);
+        pctx.arcTo(boxX + boxS, boxY + boxS, boxX, boxY + boxS, rad);
+        pctx.arcTo(boxX, boxY + boxS, boxX, boxY, rad);
+        pctx.arcTo(boxX, boxY, boxX + boxS, boxY, rad);
+        pctx.closePath();
+        pctx.fill();
+
+        pctx.drawImage(qrCanvas, boxX + 35, boxY + 35, boxS - 70, boxS - 70);
+
+        pctx.fillStyle = '#94a3b8';
+        pctx.font = '600 23px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        pctx.fillText('Наведите камеру телефона на QR-код', 400, 815);
+
+        pctx.fillStyle = '#64748b';
+        pctx.font = '600 19px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        pctx.fillText('wwteamw.github.io/school-schedule', 400, 860);
+
+        const link = document.createElement('a');
+        const rawSuffix = qrScope === 'class' ? '-' + currentClass.replace(/\s+/g, '') : '';
+        link.download = `shrk-qr${rawSuffix}.png`;
+        link.href = poster.toDataURL('image/png');
+        link.click();
+        showToast('Карточка QR сохранена');
+      } catch (_) {
+        showToast('Сделай скриншот экрана');
+      }
+    }
+
+    // Фиксированная концовка при нажатии «Поделиться»: 🌐 https://wwteamw.github.io/school-schedule/
     function buildShareText() {
-      if (!DATA || !DATA.classes) return '';
+      if (!DATA || !DATA.classes) return SHARE_FOOTER;
       const bellsMap = getActiveBells();
       const dateStr = (DATA.meta && DATA.meta.date) ? DATA.meta.date : '';
       const wd = (DATA.meta && DATA.meta.weekday) ? ` (${DATA.meta.weekday})` : '';
@@ -3096,7 +2982,8 @@
           lines.push(`${n}.${t} ${l.subject || l.text} [${l.room || '—'}]`);
         }
       });
-      lines.push(`\n${location.origin}${location.pathname}?class=${encodeURIComponent(currentClass)}`);
+      lines.push('');
+      lines.push(SHARE_FOOTER);
       return lines.join('\n');
     }
 
@@ -3110,7 +2997,7 @@
       const text = buildShareText();
       if (navigator.share) {
         try {
-          await navigator.share({ title: els.title.textContent, text });
+          await navigator.share({ text });
           return;
         } catch (_) {}
       }
@@ -3133,7 +3020,7 @@
       renderBtwUI();
     });
 
-    els.list.addEventListener('click', (e) => {
+    els.list.addEventListener('click', async (e) => {
       const jumpTeacher = e.target.closest('[data-jump-teacher]');
       if (jumpTeacher) {
         currentTeacher = jumpTeacher.getAttribute('data-jump-teacher');
@@ -3205,6 +3092,29 @@
         } else if (act === 'hit') bjHit();
         else if (act === 'stand') bjStand();
         else if (act === 'double') bjDouble();
+        return;
+      }
+
+      // QR внутри BTW
+      const qrScopeBtn = e.target.closest('[data-qr-scope]');
+      if (qrScopeBtn) {
+        qrScope = qrScopeBtn.getAttribute('data-qr-scope');
+        renderQrBtwUI();
+        return;
+      }
+      const qrActBtn = e.target.closest('[data-qr-act]');
+      if (qrActBtn) {
+        const act = qrActBtn.getAttribute('data-qr-act');
+        if (act === 'copy') {
+          try {
+            await navigator.clipboard.writeText(getQrTargetUrl());
+            showToast('Ссылка скопирована');
+          } catch (_) {
+            showToast('Не удалось скопировать');
+          }
+        } else if (act === 'download') {
+          downloadQrPoster();
+        }
       }
     });
 
