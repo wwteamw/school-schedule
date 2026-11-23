@@ -14,7 +14,6 @@
   <link rel="shortcut icon" href="./icon.svg?v=3">
   <link rel="apple-touch-icon" sizes="180x180" id="appleTouchIcon" href="./icon.svg?v=3">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Мгновенная установка темы до рендера без мигания -->
   <script>
     (function() {
       var theme = 'dark';
@@ -67,8 +66,8 @@
       --tab-shadow: 0 2px 6px rgba(0, 0, 0, 0.32);
       --playcard-bg: #f8fafc;
       --playcard-tx: #0f172a;
-      --table-felt: radial-gradient(circle at 50% 25%, #133629 0%, #0d231c 75%, #091914 100%);
-      --table-border: rgba(16, 185, 129, 0.28);
+      --table-felt: radial-gradient(circle at 50% 20%, #143b2d 0%, #0d261d 72%, #081913 100%);
+      --table-border: rgba(16, 185, 129, 0.3);
     }
 
     html[data-theme="light"] {
@@ -106,8 +105,8 @@
       --tab-shadow: 0 2px 6px rgba(15, 23, 42, 0.09);
       --playcard-bg: #ffffff;
       --playcard-tx: #0f172a;
-      --table-felt: radial-gradient(circle at 50% 25%, #ecfdf5 0%, #d1fae5 100%);
-      --table-border: rgba(5, 150, 105, 0.3);
+      --table-felt: radial-gradient(circle at 50% 20%, #ecfdf5 0%, #d1fae5 100%);
+      --table-border: rgba(5, 150, 105, 0.32);
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -115,7 +114,7 @@
       margin: 0;
       background-color: var(--bg);
       color: var(--text);
-      transition: background-color 0.2s ease, color 0.18s ease;
+      transition: background-color 0.22s ease, color 0.18s ease;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
@@ -124,6 +123,24 @@
       -webkit-font-smoothing: antialiased;
     }
     .wrap { max-width: 640px; margin: 0 auto; }
+
+    /* Анимации плавности */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes chipFade {
+      from { opacity: 0.35; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes dealCardAnim {
+      0% { opacity: 0; transform: translateY(-16px) scale(0.86) rotate(-4deg); }
+      100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+    }
+    @keyframes flipCardAnim {
+      0% { transform: scaleX(0.15); opacity: 0.5; }
+      100% { transform: scaleX(1); opacity: 1; }
+    }
 
     /* Шапка */
     .topbar {
@@ -257,8 +274,9 @@
       justify-content: center;
       gap: 6px;
       box-shadow: var(--card-shadow);
-      transition: background-color 0.2s ease, border-color 0.15s ease, color 0.15s ease;
+      transition: background-color 0.2s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
     }
+    .day-pill:active { transform: scale(0.98); }
     .day-pill.active {
       background: var(--accent-soft);
       border-color: var(--accent);
@@ -333,13 +351,15 @@
       align-items: center;
       gap: 6px;
       flex-shrink: 0;
-      transition: transform 0.1s;
+      box-shadow: 0 3px 10px rgba(59, 130, 246, 0.28);
+      transition: transform 0.12s ease, filter 0.15s ease;
     }
-    .picker-trigger:active { transform: scale(0.97); }
+    .picker-trigger:hover { filter: brightness(1.06); }
+    .picker-trigger:active { transform: scale(0.96); }
     .picker-chevron {
-      font-size: 11px;
-      opacity: 0.85;
-      transition: transform 0.18s;
+      font-size: 10px;
+      opacity: 0.9;
+      transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
     }
     .picker-trigger.open .picker-chevron { transform: rotate(180deg); }
 
@@ -374,17 +394,38 @@
     .share-btn:active { transform: scale(0.97); }
     .share-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
 
-    /* Выпадающая панель выбора параллели и класса */
-    .drawer {
+    /* Плавная аккордеон-панель выбора параллели и класса (60 FPS без рывков) */
+    .drawer-wrap {
+      display: grid;
+      grid-template-rows: 0fr;
+      opacity: 0;
+      transform: translateY(-4px);
+      margin-bottom: 0;
+      pointer-events: none;
+      transition:
+        grid-template-rows 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.2s ease,
+        transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+        margin-bottom 0.24s ease;
+    }
+    .drawer-wrap.open {
+      grid-template-rows: 1fr;
+      opacity: 1;
+      transform: translateY(0);
+      margin-bottom: 12px;
+      pointer-events: auto;
+    }
+    .drawer-inner {
+      overflow: hidden;
+      min-height: 0;
+    }
+    .drawer-box {
       background: var(--surface);
       border: 1px solid var(--border-strong);
       border-radius: 14px;
       padding: 10px;
-      margin-bottom: 12px;
-      display: none;
       box-shadow: var(--card-shadow);
     }
-    .drawer.open { display: block; }
     .grade-bar {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -397,12 +438,14 @@
       background: var(--surface-2);
       border: 1px solid var(--border);
       color: var(--muted);
-      height: 34px;
-      border-radius: 8px;
+      height: 35px;
+      border-radius: 9px;
       font-size: 14px;
       font-weight: 800;
       cursor: pointer;
+      transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.1s ease;
     }
+    .grade-chip:active { transform: scale(0.93); }
     .grade-chip.active {
       background: var(--accent-soft);
       border-color: var(--accent);
@@ -413,20 +456,27 @@
       grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
       gap: 6px;
     }
+    .class-grid.anim-chips .class-chip {
+      animation: chipFade 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
     .class-chip {
       background: var(--surface-2);
       border: 1px solid var(--border);
       color: var(--text);
-      height: 36px;
+      height: 37px;
       border-radius: 9px;
       font-size: 13.5px;
       font-weight: 700;
       cursor: pointer;
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
     }
+    .class-chip:hover { border-color: var(--accent); }
+    .class-chip:active { transform: scale(0.93); }
     .class-chip.active {
       background: var(--accent);
       border-color: var(--accent);
       color: #fff;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
     }
 
     /* Поиск учителя */
@@ -478,6 +528,7 @@
       white-space: nowrap;
       flex-shrink: 0;
       box-shadow: var(--card-shadow);
+      transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     }
     .chip-btn.active {
       background: var(--accent);
@@ -512,6 +563,9 @@
 
     /* Список уроков */
     .lessons-stack { display: flex; flex-direction: column; gap: 6px; }
+    .lessons-stack.smooth-enter {
+      animation: fadeSlideIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
 
     .lesson-card {
       background: var(--surface);
@@ -868,12 +922,12 @@
       white-space: nowrap;
     }
 
-    /* 3. Блэкджек */
+    /* 3. Блэкджек (улучшенный игровой стол и плавные карты) */
     .bj-table {
       background: var(--table-felt);
       border: 1px solid var(--table-border);
       border-radius: 16px;
-      padding: 14px;
+      padding: 15px;
       box-shadow: var(--card-shadow);
     }
     .bj-top {
@@ -881,82 +935,121 @@
       justify-content: space-between;
       align-items: center;
       gap: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       font-size: 13px;
       font-weight: 700;
     }
     .bj-bank {
       background: var(--surface);
       border: 1px solid var(--border);
-      padding: 5px 10px;
+      padding: 5px 11px;
       border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+      box-shadow: var(--card-shadow);
+    }
+    .bj-meta-pills {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .bj-bet-badge {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(59, 130, 246, 0.32);
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
       font-variant-numeric: tabular-nums;
     }
     .bj-zone {
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
     .bj-zone-label {
       font-size: 12px;
       font-weight: 700;
       color: var(--muted);
-      margin-bottom: 6px;
+      margin-bottom: 7px;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 7px;
     }
     .bj-score-pill {
       background: var(--surface);
       color: var(--text);
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 1px 6px;
-      font-size: 11.5px;
+      padding: 1px 7px;
+      font-size: 12px;
       font-weight: 800;
       font-variant-numeric: tabular-nums;
+    }
+    .bj-score-pill.bust {
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+    .bj-score-pill.twentyone {
+      color: var(--now-tx);
+      border-color: var(--now);
     }
     .bj-cards {
       display: flex;
       flex-wrap: wrap;
-      gap: 7px;
-      min-height: 68px;
+      gap: 8px;
+      min-height: 78px;
       align-items: center;
     }
     .pcard {
-      width: 48px;
-      height: 68px;
-      border-radius: 9px;
+      width: 54px;
+      height: 76px;
+      border-radius: 10px;
       background: var(--playcard-bg);
       color: var(--playcard-tx);
       border: 1px solid rgba(15, 23, 42, 0.16);
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 5px 6px;
+      padding: 6px 7px;
       font-weight: 800;
       user-select: none;
+      position: relative;
+    }
+    .pcard.new-card {
+      animation: dealCardAnim 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .pcard.flipped-card {
+      animation: flipCardAnim 0.24s ease-out both;
     }
     .pcard.red { color: #dc2626; }
     .pcard.hidden {
-      background: linear-gradient(135deg, #1d4ed8, #1e3a8a);
-      color: rgba(255, 255, 255, 0.85);
-      border-color: rgba(255, 255, 255, 0.25);
+      background: repeating-linear-gradient(
+        45deg,
+        #1e40af,
+        #1e40af 5px,
+        #1d4ed8 5px,
+        #1d4ed8 10px
+      );
+      color: rgba(255, 255, 255, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.75);
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 18px;
     }
-    .pcard-rank { font-size: 14px; line-height: 1; }
-    .pcard-suit { font-size: 17px; line-height: 1; align-self: flex-end; }
+    .pcard-top { font-size: 14px; line-height: 1; font-weight: 900; }
+    .pcard-center { font-size: 22px; line-height: 1; align-self: center; opacity: 0.92; }
+    .pcard-bot { font-size: 11px; line-height: 1; align-self: flex-end; opacity: 0.65; }
 
     .bj-status {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 9px 12px;
+      border-radius: 11px;
+      padding: 10px 12px;
       text-align: center;
       font-size: 13.5px;
       font-weight: 800;
       margin-bottom: 10px;
+      transition: border-color 0.2s ease, color 0.2s ease;
     }
     .bj-status.win { color: var(--now-tx); border-color: var(--now); }
     .bj-status.lose { color: var(--danger); border-color: var(--danger); }
@@ -970,15 +1063,17 @@
     .bj-bet-chip {
       flex: 1;
       min-width: 52px;
-      height: 34px;
+      height: 36px;
       background: var(--surface);
       border: 1px solid var(--border);
       color: var(--text);
-      border-radius: 8px;
+      border-radius: 9px;
       font-size: 12.5px;
       font-weight: 800;
       cursor: pointer;
+      transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
     }
+    .bj-bet-chip:active { transform: scale(0.95); }
     .bj-bet-chip.active {
       background: var(--accent);
       border-color: var(--accent);
@@ -986,23 +1081,24 @@
     }
     .bj-controls {
       display: flex;
-      gap: 7px;
+      gap: 8px;
     }
     .bj-btn {
       flex: 1;
-      height: 40px;
-      border-radius: 10px;
+      height: 42px;
+      border-radius: 11px;
       border: none;
-      font-size: 13.5px;
+      font-size: 14px;
       font-weight: 800;
       cursor: pointer;
       background: var(--accent);
       color: #fff;
-      transition: transform 0.08s;
+      transition: transform 0.08s ease, opacity 0.15s ease;
     }
     .bj-btn:active { transform: scale(0.96); }
+    .bj-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
     .bj-btn.stand { background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); }
-    .bj-btn.double { background: var(--warn-soft); color: var(--warn); border: 1px solid rgba(245, 158, 11, 0.4); }
+    .bj-btn.double { background: var(--warn-soft); color: var(--warn); border: 1px solid rgba(245, 158, 11, 0.45); }
 
     /* Карточка ожидания завтрашнего расписания */
     .waiting-card {
@@ -1135,9 +1231,14 @@
         </button>
       </div>
 
-      <div class="drawer" id="classDrawer">
-        <div class="grade-bar" id="gradeRow"></div>
-        <div class="class-grid" id="classGrid"></div>
+      <!-- Плавный выпадающий выбор параллели и класса -->
+      <div class="drawer-wrap" id="classDrawer">
+        <div class="drawer-inner">
+          <div class="drawer-box">
+            <div class="grade-bar" id="gradeRow"></div>
+            <div class="class-grid" id="classGrid"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1252,7 +1353,7 @@
 
     if ('serviceWorker' in navigator && !isTgWebApp) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=7').then(reg => reg.update()).catch(() => {});
+        navigator.serviceWorker.register('./sw.js?v=8').then(reg => reg.update()).catch(() => {});
       });
     }
 
@@ -1300,6 +1401,17 @@
     let btwSub = 'gpa'; // 'gpa' | 'bells' | 'bj'
     let bellsTabDay = null;
 
+    // Отдельная переменная для открытой параллели в меню (чтобы выбор параллели никогда не сбрасывался!)
+    const hasSavedClassInitially = Boolean(safeGet('selected_class', ''));
+    let drawerOpen = !hasSavedClassInitially;
+    let currentClass = safeGet('selected_class', '5 А');
+    let pickerGrade = safeGet('saved_grade', '') || (String(currentClass).match(/^(\d+)/) || ['','5'])[1];
+    let lastAnimatedClassSig = '';
+    let animateChipSwitch = false;
+    let currentTeacher = safeGet('selected_teacher', '');
+    let deferredInstallPrompt = null;
+    let lastFetchTime = 0;
+
     // Состояние Калькулятора среднего балла
     let gpaGrades = [];
     try {
@@ -1308,24 +1420,20 @@
     } catch (_) {}
     let gpaThresh = Number(safeGet('btw_thresh', '4.5')) === 4.6 ? 4.6 : 4.5;
 
-    // Состояние Блэкджека
+    // Состояние Блэкджека (разделены выбранная ставка и ставка текущего раунда + пошаговая анимация дилера)
     let bjChips = Math.max(0, Number(safeGet('btw_chips', '1000')) || 1000);
     let bjBest = Math.max(bjChips, Number(safeGet('btw_best', '1000')) || 1000);
-    let bjBet = 100;
+    let bjSelectedBet = 100;
+    let bjRoundBet = 100;
     let bjDeck = [];
     let bjPlayer = [];
     let bjDealer = [];
-    let bjPhase = 'bet'; // 'bet' | 'play' | 'done'
+    let bjPhase = 'bet'; // 'bet' | 'play' | 'dealer' | 'done'
+    let bjHoleRevealed = false;
+    let bjHoleJustFlipped = false;
     let bjMessage = 'Выбери ставку и нажми «Раздать»';
     let bjOutcome = ''; // '' | 'win' | 'lose'
-
-    const hasSavedClassInitially = Boolean(safeGet('selected_class', ''));
-    let drawerOpen = !hasSavedClassInitially;
-    let currentGrade = safeGet('saved_grade', '5');
-    let currentClass = safeGet('selected_class', '5 А');
-    let currentTeacher = safeGet('selected_teacher', '');
-    let deferredInstallPrompt = null;
-    let lastFetchTime = 0;
+    let bjTimer = null;
 
     const ua = navigator.userAgent || '';
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -1404,7 +1512,6 @@
       }
     });
 
-    // Надёжное переключение темы (с векторной иконкой и синхронизацией шторки)
     function applyTheme(themeName) {
       const isLight = themeName === 'light';
       const bgHex = isLight ? '#f1f5f9' : '#0b0f19';
@@ -1640,15 +1747,35 @@
       applySelectedDay(btn.getAttribute('data-daykey'));
     });
 
+    function getGrade(clsName) {
+      const m = String(clsName || '').match(/^(\d+)/);
+      return m ? m[1] : '';
+    }
+
     function setDrawerState(open) {
       drawerOpen = open;
+      if (drawerOpen) {
+        // При открытии меню синхронизируем параллель с выбранным классом
+        pickerGrade = getGrade(currentClass) || pickerGrade || '5';
+        renderPickerContents(false);
+      }
       els.classDrawer.classList.toggle('open', drawerOpen);
       els.pickerTrigger.classList.toggle('open', drawerOpen);
     }
-    setDrawerState(drawerOpen);
+    els.classDrawer.classList.toggle('open', drawerOpen);
+    els.pickerTrigger.classList.toggle('open', drawerOpen);
 
-    els.pickerTrigger.addEventListener('click', () => {
+    els.pickerTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
       setDrawerState(!drawerOpen);
+    });
+
+    // Закрытие выпадающего списка классов по клику мимо него
+    document.addEventListener('click', (e) => {
+      if (!drawerOpen) return;
+      if (!e.target.closest('#classDrawer') && !e.target.closest('#pickerTrigger')) {
+        setDrawerState(false);
+      }
     });
 
     function isScheduleMonday() {
@@ -1705,11 +1832,6 @@
       if (up.startsWith('Б.') || up.startsWith('B.')) cls = 'corp-b';
       else if (up.startsWith('В.')) cls = 'corp-v';
       return `<span class="room ${cls}">${escapeHtml(r)}</span>`;
-    }
-
-    function getGrade(clsName) {
-      const m = String(clsName).match(/^(\d+)/);
-      return m ? m[1] : '';
     }
 
     function collectTeachers(classesObj) {
@@ -1809,7 +1931,6 @@
     }
 
     function renderCurrentView() {
-      // Вкладка BTW работает всегда, даже если в расписании открыт экран ожидания завтрашнего PDF
       if (mode === 'btw') {
         els.classControls.style.display = 'none';
         els.teacherPanel.style.display = 'none';
@@ -1839,6 +1960,35 @@
       return `${n} уроков`;
     }
 
+    // Независимая отрисовка кнопок параллелей и классов (без перезаписи pickerGrade!)
+    function renderPickerContents(animateChips = false) {
+      if (!DATA || !DATA.classes) return;
+      const allClasses = Object.keys(DATA.classes);
+      if (!allClasses.length) return;
+
+      const grades = Array.from(new Set(allClasses.map(getGrade).filter(Boolean)))
+        .sort((a, b) => Number(a) - Number(b));
+
+      if (!grades.includes(pickerGrade)) {
+        pickerGrade = getGrade(currentClass) || grades[0];
+      }
+
+      els.gradeRow.innerHTML = grades.map(g =>
+        `<button type="button" class="grade-chip ${g === pickerGrade ? 'active' : ''}" data-grade="${escapeHtml(g)}">${escapeHtml(g)}</button>`
+      ).join('');
+
+      const gradeClasses = allClasses.filter(c => getGrade(c) === pickerGrade);
+      els.classGrid.classList.remove('anim-chips');
+      els.classGrid.innerHTML = gradeClasses.map((c, idx) =>
+        `<button type="button" class="class-chip ${c === currentClass ? 'active' : ''}" style="animation-delay:${idx * 12}ms" data-class="${escapeHtml(c)}">${escapeHtml(c)}</button>`
+      ).join('');
+
+      if (animateChips) {
+        void els.classGrid.offsetWidth;
+        els.classGrid.classList.add('anim-chips');
+      }
+    }
+
     function renderClassUI() {
       if (!DATA || !DATA.classes) return;
       const allClasses = Object.keys(DATA.classes);
@@ -1847,24 +1997,17 @@
         return;
       }
 
-      if (!DATA.classes[currentClass]) currentClass = allClasses[0];
-      currentGrade = getGrade(currentClass) || currentGrade;
+      if (!DATA.classes[currentClass]) {
+        currentClass = allClasses[0];
+        pickerGrade = getGrade(currentClass) || '5';
+      }
+
       safeSet('selected_class', currentClass);
-      safeSet('saved_grade', currentGrade);
+      safeSet('saved_grade', getGrade(currentClass) || pickerGrade);
 
       els.currentClassLabel.textContent = currentClass;
-
-      const grades = Array.from(new Set(allClasses.map(getGrade).filter(Boolean)))
-        .sort((a, b) => Number(a) - Number(b));
-
-      els.gradeRow.innerHTML = grades.map(g =>
-        `<button type="button" class="grade-chip ${g === currentGrade ? 'active' : ''}" data-grade="${escapeHtml(g)}">${escapeHtml(g)}</button>`
-      ).join('');
-
-      const gradeClasses = allClasses.filter(c => getGrade(c) === currentGrade);
-      els.classGrid.innerHTML = gradeClasses.map(c =>
-        `<button type="button" class="class-chip ${c === currentClass ? 'active' : ''}" data-class="${escapeHtml(c)}">${escapeHtml(c)}</button>`
-      ).join('');
+      renderPickerContents(animateChipSwitch);
+      animateChipSwitch = false;
 
       const lessons = DATA.classes[currentClass] || [];
       const bellsMap = getActiveBells();
@@ -1950,7 +2093,11 @@
         }
       });
 
-      els.list.innerHTML = `<div class="lessons-stack">${blocks.join('')}</div>`;
+      const sig = `${selectedDayKey}:${currentClass}`;
+      const shouldAnimateList = sig !== lastAnimatedClassSig;
+      lastAnimatedClassSig = sig;
+
+      els.list.innerHTML = `<div class="lessons-stack ${shouldAnimateList ? 'smooth-enter' : ''}">${blocks.join('')}</div>`;
     }
 
     function renderTeacherUI() {
@@ -2040,7 +2187,7 @@
         `);
       });
 
-      els.list.innerHTML = `<div class="lessons-stack">${blocks.join('')}</div>`;
+      els.list.innerHTML = `<div class="lessons-stack smooth-enter">${blocks.join('')}</div>`;
     }
 
     /* ================= ЛОГИКА РАЗДЕЛА BTW ================= */
@@ -2066,9 +2213,9 @@
       const sum = gpaGrades.reduce((a, b) => a + b, 0);
       const avg = n ? (sum / n) : 0;
 
-      const t5 = gpaThresh;                  // 4.50 или 4.60
-      const t4 = +(gpaThresh - 1).toFixed(2); // 3.50 или 3.60
-      const t3 = +(gpaThresh - 2).toFixed(2); // 2.50 или 2.60
+      const t5 = gpaThresh;
+      const t4 = +(gpaThresh - 1).toFixed(2);
+      const t3 = +(gpaThresh - 2).toFixed(2);
 
       let colorCls = 'g4';
       if (n > 0) {
@@ -2092,7 +2239,6 @@
             </div>
           `);
         } else {
-          // Считаем сколько троек или двоек можно получить без потери пятёрки
           let safe4 = 0;
           while ((sum + (safe4 + 1) * 4) / (n + safe4 + 1) >= t5) safe4++;
           rows.push(`
@@ -2201,7 +2347,7 @@
       els.list.innerHTML = `${switchHtml}<div class="bells-card">${rows}</div>`;
     }
 
-    // 3. Блэкджек
+    // 3. Блэкджек (с плавной анимацией новых карт, переворотом карты дилера и разделением ставок)
     function createDeck() {
       const suits = ['♠', '♥', '♦', '♣'];
       const ranks = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
@@ -2219,11 +2365,12 @@
     }
 
     function drawCard() {
-      if (bjDeck.length < 10) bjDeck = createDeck();
-      return bjDeck.pop();
+      if (bjDeck.length < 12) bjDeck = createDeck();
+      const c = bjDeck.pop();
+      return { rank: c.rank, suit: c.suit, isNew: true };
     }
 
-    function handScore(cards) {
+    function handInfo(cards) {
       let total = 0;
       let aces = 0;
       for (const c of cards) {
@@ -2240,7 +2387,11 @@
         total -= 10;
         aces--;
       }
-      return total;
+      return { total, isSoft: aces > 0 && total <= 21 };
+    }
+
+    function handScore(cards) {
+      return handInfo(cards).total;
     }
 
     function saveBjStats() {
@@ -2249,32 +2400,50 @@
       safeSet('btw_best', String(bjBest));
     }
 
+    function refreshBjIfVisible() {
+      if (mode === 'btw' && btwSub === 'bj') {
+        renderBlackjackUI();
+      }
+    }
+
     function startBlackjackRound() {
+      if (bjPhase === 'play' || bjPhase === 'dealer') return;
+      if (bjTimer) {
+        clearTimeout(bjTimer);
+        bjTimer = null;
+      }
+
       if (bjChips <= 0) {
         bjChips = 500;
         saveBjStats();
       }
-      if (bjBet > bjChips) bjBet = bjChips;
-      if (bjBet <= 0) bjBet = Math.min(100, bjChips);
 
-      bjChips -= bjBet;
+      bjRoundBet = Math.min(Math.max(10, bjSelectedBet), bjChips);
+      bjChips -= bjRoundBet;
       saveBjStats();
 
       if (bjDeck.length < 15) bjDeck = createDeck();
       bjPlayer = [drawCard(), drawCard()];
       bjDealer = [drawCard(), drawCard()];
+      bjHoleRevealed = false;
+      bjHoleJustFlipped = false;
       bjPhase = 'play';
       bjOutcome = '';
-      bjMessage = `Ставка: ${bjBet} 🪙 · Твой ход`;
+      bjMessage = 'Твой ход: добрать карту или остановиться';
 
       const pScore = handScore(bjPlayer);
       const dScore = handScore(bjDealer);
-      if (pScore === 21) {
-        finishBlackjackRound(true);
-      } else if (dScore === 21) {
-        finishBlackjackRound(false);
+
+      if (pScore === 21 || dScore === 21) {
+        bjPhase = 'dealer';
+        refreshBjIfVisible();
+        bjTimer = setTimeout(() => {
+          bjHoleRevealed = true;
+          bjHoleJustFlipped = true;
+          finishBlackjackRound();
+        }, 420);
       } else {
-        renderBlackjackUI();
+        refreshBjIfVisible();
       }
     }
 
@@ -2282,153 +2451,213 @@
       if (bjPhase !== 'play') return;
       bjPlayer.push(drawCard());
       const pScore = handScore(bjPlayer);
+
       if (pScore > 21) {
+        bjHoleRevealed = true;
+        bjHoleJustFlipped = true;
         bjPhase = 'done';
         bjOutcome = 'lose';
-        bjMessage = `Перебор (${pScore}) — дилер победил`;
+        bjMessage = `Перебор (${pScore}) — ставка ${bjRoundBet} 🪙 сгорела`;
         saveBjStats();
-        renderBlackjackUI();
+        refreshBjIfVisible();
       } else if (pScore === 21) {
+        // При 21 автоматически передаём ход дилеру
         bjStand();
       } else {
-        renderBlackjackUI();
+        refreshBjIfVisible();
       }
     }
 
     function bjDouble() {
-      if (bjPhase !== 'play' || bjPlayer.length !== 2 || bjChips < bjBet) return;
-      bjChips -= bjBet;
-      bjBet *= 2;
+      if (bjPhase !== 'play' || bjPlayer.length !== 2 || bjChips < bjRoundBet) return;
+      bjChips -= bjRoundBet;
+      bjRoundBet *= 2;
       saveBjStats();
+
       bjPlayer.push(drawCard());
       const pScore = handScore(bjPlayer);
       if (pScore > 21) {
+        bjHoleRevealed = true;
+        bjHoleJustFlipped = true;
         bjPhase = 'done';
         bjOutcome = 'lose';
-        bjMessage = `Перебор (${pScore}) на удвоении`;
-        renderBlackjackUI();
+        bjMessage = `Перебор (${pScore}) на удвоении — минус ${bjRoundBet} 🪙`;
+        saveBjStats();
+        refreshBjIfVisible();
       } else {
         bjStand();
       }
     }
 
+    // Плавный пошаговый добор карт дилером с переворотом закрытой карты
     function bjStand() {
       if (bjPhase !== 'play') return;
-      while (handScore(bjDealer) < 17) {
-        bjDealer.push(drawCard());
+      bjPhase = 'dealer';
+      bjHoleRevealed = true;
+      bjHoleJustFlipped = true;
+      bjMessage = 'Ход дилера...';
+      refreshBjIfVisible();
+
+      function dealerNextStep() {
+        const dScore = handScore(bjDealer);
+        if (dScore < 17) {
+          bjTimer = setTimeout(() => {
+            bjDealer.push(drawCard());
+            refreshBjIfVisible();
+            dealerNextStep();
+          }, 460);
+        } else {
+          bjTimer = setTimeout(() => {
+            finishBlackjackRound();
+          }, 260);
+        }
       }
-      finishBlackjackRound(false);
+      dealerNextStep();
     }
 
-    function finishBlackjackRound(naturalCheck) {
+    function finishBlackjackRound() {
+      bjTimer = null;
       bjPhase = 'done';
+      bjHoleRevealed = true;
+
       const p = handScore(bjPlayer);
       const d = handScore(bjDealer);
       const pNatural = p === 21 && bjPlayer.length === 2;
       const dNatural = d === 21 && bjDealer.length === 2;
 
       if (pNatural && !dNatural) {
-        const winAmt = Math.floor(bjBet * 2.5);
-        bjChips += winAmt;
+        const payout = Math.floor(bjRoundBet * 2.5);
+        const profit = payout - bjRoundBet;
+        bjChips += payout;
         bjOutcome = 'win';
-        bjMessage = `Блэкджек! +${winAmt - bjBet} 🪙`;
+        bjMessage = `Блэкджек 21! Выигрыш +${profit} 🪙`;
       } else if (dNatural && !pNatural) {
         bjOutcome = 'lose';
-        bjMessage = `У дилера Блэкджек (21)`;
+        bjMessage = `У дилера натуральный Блэкджек (21)`;
       } else if (d > 21) {
-        bjChips += bjBet * 2;
+        bjChips += bjRoundBet * 2;
         bjOutcome = 'win';
-        bjMessage = `У дилера перебор (${d})! Ты выиграл +${bjBet} 🪙`;
+        bjMessage = `У дилера перебор (${d})! Победа +${bjRoundBet} 🪙`;
       } else if (p > d) {
-        bjChips += bjBet * 2;
+        bjChips += bjRoundBet * 2;
         bjOutcome = 'win';
-        bjMessage = `Победа (${p} против ${d})! +${bjBet} 🪙`;
+        bjMessage = `Победа (${p} против ${d})! +${bjRoundBet} 🪙`;
       } else if (p < d) {
         bjOutcome = 'lose';
         bjMessage = `Дилер старше (${d} против ${p})`;
       } else {
-        bjChips += bjBet;
+        bjChips += bjRoundBet;
         bjOutcome = '';
-        bjMessage = `Ничья (${p}:${d}) — ставка возвращена`;
+        bjMessage = `Ничья (${p}:${d}) — ставка ${bjRoundBet} 🪙 возвращена`;
       }
 
-      if (bjBet > bjChips && bjChips > 0) {
-        bjBet = Math.min(100, bjChips);
+      if (bjSelectedBet > bjChips && bjChips > 0) {
+        bjSelectedBet = Math.min(100, bjChips);
       }
       saveBjStats();
-      renderBlackjackUI();
+      refreshBjIfVisible();
     }
 
-    function cardHtml(c, hidden = false) {
+    function cardHtml(c, hidden = false, justFlipped = false) {
       if (hidden) {
-        return `<div class="pcard hidden">🂠</div>`;
+        const animCls = c.isNew ? 'new-card' : '';
+        c.isNew = false;
+        return `<div class="pcard hidden ${animCls}">✦</div>`;
       }
       const isRed = c.suit === '♥' || c.suit === '♦';
+      let animCls = '';
+      if (justFlipped) animCls = 'flipped-card';
+      else if (c.isNew) animCls = 'new-card';
+      c.isNew = false;
+
       return `
-        <div class="pcard ${isRed ? 'red' : ''}">
-          <span class="pcard-rank">${c.rank}</span>
-          <span class="pcard-suit">${c.suit}</span>
+        <div class="pcard ${isRed ? 'red' : ''} ${animCls}">
+          <span class="pcard-top">${c.rank}</span>
+          <span class="pcard-center">${c.suit}</span>
+          <span class="pcard-bot">${c.rank}</span>
         </div>
       `;
     }
 
     function renderBlackjackUI() {
-      const showDealerAll = bjPhase === 'done';
+      const dInfo = bjDealer.length
+        ? (bjHoleRevealed ? handInfo(bjDealer) : handInfo([bjDealer[0]]))
+        : { total: 0, isSoft: false };
+      const pInfo = bjPlayer.length ? handInfo(bjPlayer) : { total: 0, isSoft: false };
+
       const dScoreText = bjDealer.length
-        ? (showDealerAll ? handScore(bjDealer) : `${handScore([bjDealer[0]])}+?`)
+        ? (bjHoleRevealed ? String(dInfo.total) : `${dInfo.total} + ?`)
         : '—';
-      const pScoreText = bjPlayer.length ? handScore(bjPlayer) : '—';
+
+      let pScoreText = '—';
+      if (bjPlayer.length) {
+        pScoreText = (pInfo.isSoft && pInfo.total < 21 && bjPhase === 'play')
+          ? `${pInfo.total - 10} / ${pInfo.total}`
+          : String(pInfo.total);
+      }
+
+      const dPillCls = bjHoleRevealed && dInfo.total > 21 ? 'bust' : (bjHoleRevealed && dInfo.total === 21 ? 'twentyone' : '');
+      const pPillCls = pInfo.total > 21 ? 'bust' : (pInfo.total === 21 ? 'twentyone' : '');
+
+      const flipNow = bjHoleJustFlipped;
+      bjHoleJustFlipped = false;
 
       const dealerCardsHtml = bjDealer.length
-        ? bjDealer.map((c, idx) => cardHtml(c, idx === 1 && !showDealerAll)).join('')
-        : `<span style="color:var(--muted);font-size:12.5px">Карты ещё не розданы</span>`;
+        ? bjDealer.map((c, idx) => cardHtml(c, idx === 1 && !bjHoleRevealed, idx === 1 && flipNow)).join('')
+        : `<span style="color:var(--muted);font-size:12.5px">Нажми «Раздать», чтобы начать партию</span>`;
 
       const playerCardsHtml = bjPlayer.length
-        ? bjPlayer.map(c => cardHtml(c, false)).join('')
-        : `<span style="color:var(--muted);font-size:12.5px">Сделай ставку для начала раунда</span>`;
+        ? bjPlayer.map(c => cardHtml(c, false, false)).join('')
+        : `<span style="color:var(--muted);font-size:12.5px">Выбери размер ставки снизу</span>`;
 
       let bottomControls = '';
-      if (bjPhase === 'play') {
-        const canDouble = bjPlayer.length === 2 && bjChips >= bjBet;
+      if (bjPhase === 'play' || bjPhase === 'dealer') {
+        const disabled = bjPhase === 'dealer' ? 'disabled' : '';
+        const canDouble = bjPhase === 'play' && bjPlayer.length === 2 && bjChips >= bjRoundBet;
         bottomControls = `
           <div class="bj-controls">
-            <button type="button" class="bj-btn" data-bj-act="hit">Ещё</button>
-            <button type="button" class="bj-btn stand" data-bj-act="stand">Хватит</button>
-            ${canDouble ? `<button type="button" class="bj-btn double" data-bj-act="double">×2</button>` : ''}
+            <button type="button" class="bj-btn" data-bj-act="hit" ${disabled}>Ещё карту</button>
+            <button type="button" class="bj-btn stand" data-bj-act="stand" ${disabled}>Хватит</button>
+            ${canDouble ? `<button type="button" class="bj-btn double" data-bj-act="double">Удвоить ×2</button>` : ''}
           </div>
         `;
       } else {
         const presets = [50, 100, 250, 500];
+        const effectiveBet = bjChips > 0 ? Math.min(bjSelectedBet, bjChips) : 500;
         bottomControls = `
           <div class="bj-bets">
             ${presets.map(v => `
-              <button type="button" class="bj-bet-chip ${bjBet === v ? 'active' : ''}" data-bj-bet="${v}">${v}</button>
+              <button type="button" class="bj-bet-chip ${bjSelectedBet === v && bjSelectedBet !== bjChips ? 'active' : ''}" data-bj-bet="${v}">${v}</button>
             `).join('')}
-            <button type="button" class="bj-bet-chip ${bjChips > 0 && bjBet === bjChips ? 'active' : ''}" data-bj-bet="all">Все</button>
+            <button type="button" class="bj-bet-chip ${bjChips > 0 && bjSelectedBet === bjChips ? 'active' : ''}" data-bj-bet="all">Ва-банк</button>
           </div>
           <div class="bj-controls">
             ${bjChips > 0
-              ? `<button type="button" class="bj-btn" data-bj-act="deal">Раздать (${Math.min(bjBet, bjChips)} 🪙)</button>`
-              : `<button type="button" class="bj-btn" data-bj-act="bonus">Получить +500 🪙 и раздать</button>`
+              ? `<button type="button" class="bj-btn" data-bj-act="deal">Раздать (${effectiveBet} 🪙)</button>`
+              : `<button type="button" class="bj-btn" data-bj-act="bonus">Бонус +500 🪙 и раздать</button>`
             }
           </div>
         `;
       }
 
+      const activeBetPill = (bjPhase === 'play' || bjPhase === 'dealer')
+        ? `<span class="bj-bet-badge">Банк: ${bjRoundBet} 🪙</span>`
+        : `<span style="color:var(--muted);font-size:12px">Рекорд: ${bjBest} 🪙</span>`;
+
       els.list.innerHTML = `
         <div class="bj-table">
           <div class="bj-top">
             <span class="bj-bank">Баланс: ${bjChips} 🪙</span>
-            <span style="color:var(--muted);font-size:12px">Рекорд: ${bjBest} 🪙</span>
+            <div class="bj-meta-pills">${activeBetPill}</div>
           </div>
 
           <div class="bj-zone">
-            <div class="bj-zone-label"><span>Дилер</span><span class="bj-score-pill">${dScoreText}</span></div>
+            <div class="bj-zone-label"><span>Дилер</span><span class="bj-score-pill ${dPillCls}">${dScoreText}</span></div>
             <div class="bj-cards">${dealerCardsHtml}</div>
           </div>
 
           <div class="bj-zone">
-            <div class="bj-zone-label"><span>Твоя рука</span><span class="bj-score-pill">${pScoreText}</span></div>
+            <div class="bj-zone-label"><span>Твоя рука</span><span class="bj-score-pill ${pPillCls}">${pScoreText}</span></div>
             <div class="bj-cards">${playerCardsHtml}</div>
           </div>
 
@@ -2495,7 +2724,6 @@
       renderBtwUI();
     });
 
-    // Единый обработчик кликов внутри основного контейнера
     els.list.addEventListener('click', (e) => {
       const jumpTeacher = e.target.closest('[data-jump-teacher]');
       if (jumpTeacher) {
@@ -2550,8 +2778,9 @@
       // Блэкджек
       const betBtn = e.target.closest('[data-bj-bet]');
       if (betBtn) {
+        if (bjPhase === 'play' || bjPhase === 'dealer') return;
         const val = betBtn.getAttribute('data-bj-bet');
-        bjBet = val === 'all' ? Math.max(50, bjChips) : Number(val);
+        bjSelectedBet = val === 'all' ? Math.max(50, bjChips) : Number(val);
         renderBlackjackUI();
         return;
       }
@@ -2561,7 +2790,7 @@
         if (act === 'deal') startBlackjackRound();
         else if (act === 'bonus') {
           bjChips = 500;
-          bjBet = 100;
+          bjSelectedBet = 100;
           saveBjStats();
           startBlackjackRound();
         } else if (act === 'hit') bjHit();
@@ -2570,17 +2799,24 @@
       }
     });
 
+    // Клик по параллели: мгновенно переключает сетку букв выбранной параллели с плавной анимацией (не сбрасываясь!)
     els.gradeRow.addEventListener('click', (e) => {
+      e.stopPropagation();
       const btn = e.target.closest('[data-grade]');
       if (!btn || !DATA) return;
-      currentGrade = btn.getAttribute('data-grade');
-      renderClassUI();
+      const nextGrade = btn.getAttribute('data-grade');
+      if (nextGrade === pickerGrade) return;
+      pickerGrade = nextGrade;
+      renderPickerContents(true);
     });
 
+    // Клик по конкретному классу: выбирает класс, плавно сворачивает меню и анимирует новый список уроков
     els.classGrid.addEventListener('click', (e) => {
+      e.stopPropagation();
       const btn = e.target.closest('[data-class]');
       if (!btn) return;
       currentClass = btn.getAttribute('data-class');
+      pickerGrade = getGrade(currentClass) || pickerGrade;
       setDrawerState(false);
       renderClassUI();
     });
