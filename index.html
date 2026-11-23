@@ -14,6 +14,7 @@
   <link rel="shortcut icon" href="./icon.svg?v=3">
   <link rel="apple-touch-icon" sizes="180x180" id="appleTouchIcon" href="./icon.svg?v=3">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js" defer></script>
   <script>
     (function() {
       var theme = 'dark';
@@ -140,6 +141,10 @@
     @keyframes flipCardAnim {
       0% { transform: scaleX(0.15); opacity: 0.5; }
       100% { transform: scaleX(1); opacity: 1; }
+    }
+    @keyframes modalPopIn {
+      from { opacity: 0; transform: scale(0.94) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
     }
 
     /* Шапка */
@@ -323,7 +328,7 @@
       box-shadow: var(--tab-shadow);
     }
 
-    /* Панель управления классом + кнопка Поделиться */
+    /* Панель управления классом + QR + Поделиться */
     .toolbar {
       display: flex;
       align-items: center;
@@ -334,8 +339,15 @@
     .toolbar-left {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 9px;
       min-width: 0;
+      flex: 1;
+    }
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
     }
     .picker-trigger {
       background: var(--accent);
@@ -373,26 +385,165 @@
       text-overflow: ellipsis;
     }
 
+    .qr-btn,
     .share-btn {
       background: var(--surface);
       border: 1px solid var(--border);
       color: var(--text);
       height: 36px;
-      padding: 0 12px;
+      padding: 0 11px;
       border-radius: 10px;
       font-size: 12.5px;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       flex-shrink: 0;
       box-shadow: var(--card-shadow);
       transition: background-color 0.2s ease, border-color 0.15s ease, transform 0.1s ease;
     }
+    .qr-btn:hover,
     .share-btn:hover { border-color: var(--accent); }
+    .qr-btn:active,
     .share-btn:active { transform: scale(0.97); }
-    .share-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+    .qr-btn svg,
+    .share-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.1;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    /* Модальное окно QR-кода */
+    .qr-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 12, 22, 0.68);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 80;
+    }
+    .qr-backdrop.open { display: flex; }
+    .qr-modal {
+      width: 100%;
+      max-width: 340px;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+      animation: modalPopIn 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+      text-align: center;
+    }
+    .qr-modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .qr-modal-title {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+    .qr-close-btn {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .qr-scope-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--track);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 12px;
+    }
+    .qr-scope-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 6px 8px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .qr-scope-btn.active {
+      background: var(--tab-active);
+      color: var(--text);
+      box-shadow: var(--tab-shadow);
+    }
+    .qr-canvas-box {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 10px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+    }
+    .qr-canvas-box canvas,
+    .qr-canvas-box img {
+      width: 210px;
+      height: 210px;
+      display: block;
+      border-radius: 4px;
+    }
+    .qr-hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .qr-modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .qr-act-btn {
+      height: 38px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: transform 0.1s ease, border-color 0.15s ease;
+    }
+    .qr-act-btn:active { transform: scale(0.97); }
+    .qr-act-btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
 
     /* Плавная аккордеон-панель выбора параллели и класса (60 FPS без рывков) */
     .drawer-wrap {
@@ -1175,7 +1326,7 @@
       opacity: 0;
       pointer-events: none;
       transition: 0.2s;
-      z-index: 50;
+      z-index: 95;
       box-shadow: 0 8px 24px rgba(15, 23, 42, 0.22);
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -1183,6 +1334,7 @@
     @media (max-width: 420px) {
       h1 { font-size: 18px; }
       .divider-note { padding-left: 8px; }
+      .qr-btn, .share-btn { padding: 0 9px; font-size: 12px; }
     }
   </style>
 </head>
@@ -1231,10 +1383,21 @@
           </button>
           <span class="summary-text" id="classSummary"></span>
         </div>
-        <button class="share-btn" id="shareBtn" type="button">
-          <svg viewBox="0 0 24 24"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-          <span>Поделиться</span>
-        </button>
+        <div class="toolbar-actions">
+          <button class="qr-btn" id="qrBtn" type="button" title="QR-код для быстрого открытия">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7" rx="1.4"/>
+              <rect x="14" y="3" width="7" height="7" rx="1.4"/>
+              <rect x="3" y="14" width="7" height="7" rx="1.4"/>
+              <path d="M14 14h3v3h-3zM20 14v3h-2M14 20h3M19 19h2v2h-2z"/>
+            </svg>
+            <span>QR</span>
+          </button>
+          <button class="share-btn" id="shareBtn" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            <span>Поделиться</span>
+          </button>
+        </div>
       </div>
 
       <!-- Плавный выпадающий выбор параллели и класса -->
@@ -1273,6 +1436,32 @@
     </div>
 
     <main id="contentList"></main>
+  </div>
+
+  <!-- Модальное окно QR-шеринга -->
+  <div class="qr-backdrop" id="qrModal" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
+    <div class="qr-modal">
+      <div class="qr-modal-head">
+        <div class="qr-modal-title" id="qrModalTitle">QR-код расписания</div>
+        <button class="qr-close-btn" id="qrCloseBtn" type="button" aria-label="Закрыть">✕</button>
+      </div>
+
+      <div class="qr-scope-tabs">
+        <button class="qr-scope-btn active" id="qrScopeSite" type="button">Весь сайт</button>
+        <button class="qr-scope-btn" id="qrScopeClass" type="button">Класс 5 А</button>
+      </div>
+
+      <div class="qr-canvas-box" id="qrCanvasWrap">
+        <canvas id="qrCanvas" width="440" height="440"></canvas>
+      </div>
+
+      <div class="qr-hint" id="qrHintText">Наведи камеру телефона — сразу откроется актуальное расписание ШРК</div>
+
+      <div class="qr-modal-actions">
+        <button class="qr-act-btn" id="qrCopyUrlBtn" type="button">Скопировать ссылку</button>
+        <button class="qr-act-btn primary" id="qrDownloadBtn" type="button">Скачать PNG</button>
+      </div>
+    </div>
   </div>
 
   <div class="toast" id="toast">Скопировано</div>
@@ -1361,7 +1550,7 @@
 
     if ('serviceWorker' in navigator && !isTgWebApp) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=9').then(reg => reg.update()).catch(() => {});
+        navigator.serviceWorker.register('./sw.js?v=10').then(reg => reg.update()).catch(() => {});
       });
     }
 
@@ -1394,7 +1583,17 @@
       liveBar: document.getElementById('liveBar'),
       liveLeft: document.getElementById('liveLeft'),
       liveRight: document.getElementById('liveRight'),
+      qrBtn: document.getElementById('qrBtn'),
       shareBtn: document.getElementById('shareBtn'),
+      qrModal: document.getElementById('qrModal'),
+      qrCloseBtn: document.getElementById('qrCloseBtn'),
+      qrScopeSite: document.getElementById('qrScopeSite'),
+      qrScopeClass: document.getElementById('qrScopeClass'),
+      qrCanvasWrap: document.getElementById('qrCanvasWrap'),
+      qrCanvas: document.getElementById('qrCanvas'),
+      qrHintText: document.getElementById('qrHintText'),
+      qrCopyUrlBtn: document.getElementById('qrCopyUrlBtn'),
+      qrDownloadBtn: document.getElementById('qrDownloadBtn'),
       list: document.getElementById('contentList'),
       toast: document.getElementById('toast')
     };
@@ -1408,8 +1607,26 @@
     let mode = 'class'; // 'class' | 'teacher' | 'btw'
     let btwSub = 'gpa'; // 'gpa' | 'bells' | 'bj'
     let bellsTabDay = null;
+    let qrScope = 'site'; // 'site' | 'class'
 
-    // Отдельная переменная для открытой параллели в меню (чтобы выбор параллели никогда не сбрасывался!)
+    // Поддержка прямых QR-ссылок (?class=9%20Б или ?teacher=Иванова%20И.И.)
+    let urlRequestedClass = '';
+    let urlRequestedTeacher = '';
+    try {
+      const sp = new URLSearchParams(location.search);
+      urlRequestedClass = (sp.get('class') || sp.get('c') || '').trim();
+      urlRequestedTeacher = (sp.get('teacher') || sp.get('t') || '').trim();
+      if (urlRequestedClass) {
+        safeSet('selected_class', urlRequestedClass);
+      }
+      if (urlRequestedTeacher) {
+        safeSet('selected_teacher', urlRequestedTeacher);
+      }
+      if (urlRequestedClass || urlRequestedTeacher) {
+        history.replaceState(null, '', location.pathname + location.hash);
+      }
+    } catch (_) {}
+
     const hasSavedClassInitially = Boolean(safeGet('selected_class', ''));
     let drawerOpen = !hasSavedClassInitially;
     let currentClass = safeGet('selected_class', '5 А');
@@ -1417,6 +1634,9 @@
     let lastAnimatedClassSig = '';
     let animateChipSwitch = false;
     let currentTeacher = safeGet('selected_teacher', '');
+    if (urlRequestedTeacher) {
+      mode = 'teacher';
+    }
     let deferredInstallPrompt = null;
     let lastFetchTime = 0;
 
@@ -1428,7 +1648,7 @@
     } catch (_) {}
     let gpaThresh = Number(safeGet('btw_thresh', '4.5')) === 4.6 ? 4.6 : 4.5;
 
-    // Состояние Блэкджека (разделены выбранная ставка и ставка текущего раунда + пошаговая анимация дилера)
+    // Состояние Блэкджека
     let bjChips = Math.max(0, Number(safeGet('btw_chips', '1000')) || 1000);
     let bjBest = Math.max(bjChips, Number(safeGet('btw_best', '1000')) || 1000);
     let bjSelectedBet = 100;
@@ -1646,6 +1866,16 @@
       ALL_TEACHERS = collectTeachers(DATA.classes);
       bellsTabDay = isScheduleMonThu() ? 'mon_thu' : 'tue_wed_fri';
 
+      // Если перешли по ссылке с ?class=..., сопоставляем без чувствительности к пробелам/регистру
+      if (urlRequestedClass && DATA.classes && !DATA.classes[urlRequestedClass]) {
+        const normReq = normStr(urlRequestedClass).replace(/\s+/g, '');
+        const foundCls = Object.keys(DATA.classes).find(c => normStr(c).replace(/\s+/g, '') === normReq);
+        if (foundCls) {
+          currentClass = foundCls;
+          safeSet('selected_class', currentClass);
+        }
+      }
+
       const dateVal = (DATA.meta && DATA.meta.date) || key;
       const wdVal = DATA.meta && DATA.meta.weekday;
       els.title.textContent = formatHumanTitle(dateVal, wdVal);
@@ -1653,6 +1883,10 @@
       const updTime = (RAW_JSON && RAW_JSON.updated_at) || DATA.updated_at || '';
       const offlineNote = navigator.onLine === false ? ' · офлайн' : '';
       els.meta.textContent = formatShortUpdated(updTime) + offlineNote;
+
+      els.tabClass.classList.toggle('active', mode === 'class');
+      els.tabTeacher.classList.toggle('active', mode === 'teacher');
+      els.tabBtw.classList.toggle('active', mode === 'btw');
 
       renderDaySwitcher();
       renderCurrentView();
@@ -1764,7 +1998,6 @@
     function setDrawerState(open) {
       drawerOpen = open;
       if (drawerOpen) {
-        // При открытии меню синхронизируем параллель с выбранным классом
         pickerGrade = getGrade(currentClass) || pickerGrade || '5';
         renderPickerContents(false);
       }
@@ -1779,7 +2012,6 @@
       setDrawerState(!drawerOpen);
     });
 
-    // Закрытие выпадающего списка классов по клику мимо него
     document.addEventListener('click', (e) => {
       if (!drawerOpen) return;
       if (!e.target.closest('#classDrawer') && !e.target.closest('#pickerTrigger')) {
@@ -1787,7 +2019,6 @@
       }
     });
 
-    // Определяем, относится ли выбранный учебный день к сетке «Понедельник, четверг»
     function isScheduleMonThu() {
       if (!DATA) {
         const d = getMskNow().dow;
@@ -1975,7 +2206,6 @@
       return `${n} уроков`;
     }
 
-    // Независимая отрисовка кнопок параллелей и классов (без перезаписи pickerGrade!)
     function renderPickerContents(animateChips = false) {
       if (!DATA || !DATA.classes) return;
       const allClasses = Object.keys(DATA.classes);
@@ -2205,6 +2435,161 @@
       els.list.innerHTML = `<div class="lessons-stack smooth-enter">${blocks.join('')}</div>`;
     }
 
+    /* ================= QR-КОД ДЛЯ ШЕРИНГА ================= */
+    function getQrTargetUrl() {
+      const base = location.origin + location.pathname;
+      if (qrScope === 'class' && currentClass) {
+        return `${base}?class=${encodeURIComponent(currentClass)}`;
+      }
+      return base;
+    }
+
+    function drawQrCodeToCanvas(canvas, urlText) {
+      const ctx = canvas.getContext('2d');
+      const size = canvas.width;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+
+      if (typeof window.qrcode === 'function') {
+        const qr = window.qrcode(0, 'M');
+        qr.addData(urlText);
+        qr.make();
+        const count = qr.getModuleCount();
+        const quiet = 2;
+        const total = count + quiet * 2;
+        const cell = size / total;
+
+        ctx.fillStyle = '#0f172a';
+        for (let r = 0; r < count; r++) {
+          for (let c = 0; c < count; c++) {
+            if (qr.isDark(r, c)) {
+              const x = Math.floor((c + quiet) * cell);
+              const y = Math.floor((r + quiet) * cell);
+              const w = Math.ceil((c + quiet + 1) * cell) - x;
+              const h = Math.ceil((r + quiet + 1) * cell) - y;
+              ctx.fillRect(x, y, w, h);
+            }
+          }
+        }
+        return true;
+      }
+
+      // Резервный вариант через картинку, если библиотека ещё подгружается
+      const fallbackImg = new Image();
+      fallbackImg.crossOrigin = 'anonymous';
+      fallbackImg.onload = () => {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(fallbackImg, 0, 0, size, size);
+      };
+      fallbackImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=440x440&margin=12&data=' + encodeURIComponent(urlText);
+      return false;
+    }
+
+    function updateQrModalView() {
+      els.qrScopeClass.textContent = `Класс ${currentClass}`;
+      els.qrScopeSite.classList.toggle('active', qrScope === 'site');
+      els.qrScopeClass.classList.toggle('active', qrScope === 'class');
+
+      const targetUrl = getQrTargetUrl();
+      drawQrCodeToCanvas(els.qrCanvas, targetUrl);
+
+      els.qrHintText.textContent = qrScope === 'class'
+        ? `При сканировании сразу откроется расписание класса ${currentClass}`
+        : 'Наведи камеру телефона — сразу откроется актуальное расписание ШРК';
+    }
+
+    function openQrModal() {
+      updateQrModalView();
+      els.qrModal.classList.add('open');
+    }
+
+    function closeQrModal() {
+      els.qrModal.classList.remove('open');
+    }
+
+    els.qrBtn.addEventListener('click', openQrModal);
+    els.qrCloseBtn.addEventListener('click', closeQrModal);
+    els.qrModal.addEventListener('click', (e) => {
+      if (e.target === els.qrModal) closeQrModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && els.qrModal.classList.contains('open')) {
+        closeQrModal();
+      }
+    });
+
+    els.qrScopeSite.addEventListener('click', () => {
+      qrScope = 'site';
+      updateQrModalView();
+    });
+    els.qrScopeClass.addEventListener('click', () => {
+      qrScope = 'class';
+      updateQrModalView();
+    });
+
+    els.qrCopyUrlBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(getQrTargetUrl());
+        showToast('Ссылка скопирована');
+      } catch (_) {
+        showToast('Не удалось скопировать');
+      }
+    });
+
+    // Генерация красивой готовой PNG-карточки для пересылки или печати в классный уголок
+    els.qrDownloadBtn.addEventListener('click', () => {
+      try {
+        const poster = document.createElement('canvas');
+        poster.width = 800;
+        poster.height = 960;
+        const pctx = poster.getContext('2d');
+
+        pctx.fillStyle = '#0b0f19';
+        pctx.fillRect(0, 0, 800, 960);
+
+        pctx.fillStyle = '#f1f5f9';
+        pctx.textAlign = 'center';
+        pctx.font = '800 42px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        pctx.fillText('Расписание уроков — ШРК', 400, 105);
+
+        pctx.fillStyle = '#38bdf8';
+        pctx.font = '700 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        pctx.fillText(qrScope === 'class' ? `Прямой вход: ${currentClass} класс` : 'Актуальное расписание со звонками', 400, 155);
+
+        // Белая карточка под QR-код
+        const boxX = 130, boxY = 205, boxS = 540, rad = 32;
+        pctx.fillStyle = '#ffffff';
+        pctx.beginPath();
+        pctx.moveTo(boxX + rad, boxY);
+        pctx.arcTo(boxX + boxS, boxY, boxX + boxS, boxY + boxS, rad);
+        pctx.arcTo(boxX + boxS, boxY + boxS, boxX, boxY + boxS, rad);
+        pctx.arcTo(boxX, boxY + boxS, boxX, boxY, rad);
+        pctx.arcTo(boxX, boxY, boxX + boxS, boxY, rad);
+        pctx.closePath();
+        pctx.fill();
+
+        pctx.drawImage(els.qrCanvas, boxX + 35, boxY + 35, boxS - 70, boxS - 70);
+
+        pctx.fillStyle = '#94a3b8';
+        pctx.font = '600 23px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        pctx.fillText('Наведите камеру телефона на QR-код', 400, 815);
+
+        pctx.fillStyle = '#64748b';
+        pctx.font = '600 19px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        pctx.fillText((location.host + location.pathname).replace(/\/$/, ''), 400, 860);
+
+        const link = document.createElement('a');
+        const suffix = qrScope === 'class' ? '-' + currentClass.replace(/\s+/g, '') : '';
+        link.download = `shrk-qr${suffix}.png`;
+        link.href = poster.toDataURL('image/png');
+        link.click();
+        showToast('Карточка QR сохранена');
+      } catch (_) {
+        showToast('Сделай скриншот экрана');
+      }
+    });
+
     /* ================= ЛОГИКА РАЗДЕЛА BTW ================= */
     function renderBtwUI() {
       els.btwPanel.querySelectorAll('[data-btw]').forEach(btn => {
@@ -2364,7 +2749,7 @@
       els.list.innerHTML = `${switchHtml}<div class="bells-card">${rows}</div>`;
     }
 
-    // 3. Блэкджек (с плавной анимацией новых карт, переворотом карты дилера и разделением ставок)
+    // 3. Блэкджек
     function createDeck() {
       const suits = ['♠', '♥', '♦', '♣'];
       const ranks = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
@@ -2478,7 +2863,6 @@
         saveBjStats();
         refreshBjIfVisible();
       } else if (pScore === 21) {
-        // При 21 автоматически передаём ход дилеру
         bjStand();
       } else {
         refreshBjIfVisible();
@@ -2506,7 +2890,6 @@
       }
     }
 
-    // Плавный пошаговый добор карт дилером с переворотом закрытой карты
     function bjStand() {
       if (bjPhase !== 'play') return;
       bjPhase = 'dealer';
@@ -2704,7 +3087,7 @@
           lines.push(`${n}.${t} ${l.subject || l.text} [${l.room || '—'}]`);
         }
       });
-      lines.push(`\n${location.origin}${location.pathname}`);
+      lines.push(`\n${location.origin}${location.pathname}?class=${encodeURIComponent(currentClass)}`);
       return lines.join('\n');
     }
 
@@ -2816,7 +3199,6 @@
       }
     });
 
-    // Клик по параллели: мгновенно переключает сетку букв выбранной параллели с плавной анимацией (не сбрасываясь!)
     els.gradeRow.addEventListener('click', (e) => {
       e.stopPropagation();
       const btn = e.target.closest('[data-grade]');
@@ -2827,7 +3209,6 @@
       renderPickerContents(true);
     });
 
-    // Клик по конкретному классу: выбирает класс, плавно сворачивает меню и анимирует новый список уроков
     els.classGrid.addEventListener('click', (e) => {
       e.stopPropagation();
       const btn = e.target.closest('[data-class]');
